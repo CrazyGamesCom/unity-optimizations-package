@@ -5,7 +5,7 @@ using UnityEditor;
 using UnityEditor.IMGUI.Controls;
 using UnityEngine;
 
-namespace CrazySDK.Script.Editor.TreeLib
+namespace Editor.CrazyGames.TreeLib
 {
 
 	internal class TreeViewItem<T> : TreeViewItem where T : TreeElement

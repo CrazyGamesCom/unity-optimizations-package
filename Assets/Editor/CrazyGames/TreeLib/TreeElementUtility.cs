@@ -4,7 +4,7 @@ using System.Linq;
 using NUnit.Framework;
 using UnityEditor;
 
-namespace CrazySDK.Script.Editor.TreeLib
+namespace Editor.CrazyGames.TreeLib
 {
 
 	// TreeElementUtility and TreeElement are useful helper classes for backend tree data structures.

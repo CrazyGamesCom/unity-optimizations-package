@@ -1,16 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using CrazySDK.Script.Editor.TreeLib;
+using Editor.CrazyGames.TreeLib;
 using UnityEditor;
 using UnityEditor.IMGUI.Controls;
 using UnityEngine;
 
-namespace CrazySDK.Script.Editor
+namespace Editor.CrazyGames.WindowComponents.TextureOptimizations
 {
-    class MultiColumnTree : TreeViewWithTreeModel<TextureTreeElement>
+    class MultiColumnTree : TreeViewWithTreeModel<TextureTreeItem>
     {
-        public MultiColumnTree(TreeViewState treeViewState, MultiColumnHeader multiColumnHeader, TreeModel<TextureTreeElement> model)
+        public MultiColumnTree(TreeViewState treeViewState, MultiColumnHeader multiColumnHeader, TreeModel<TextureTreeItem> model)
             : base(treeViewState, multiColumnHeader, model)
         {
             showBorder = true;
@@ -35,7 +35,7 @@ namespace CrazySDK.Script.Editor
             if (sortedColumns.Length == 0)
                 return;
 
-            var items = rootItem.children.Cast<TreeViewItem<TextureTreeElement>>().OrderBy(i => i.data.textureName);
+            var items = rootItem.children.Cast<TreeViewItem<TextureTreeItem>>().OrderBy(i => i.data.textureName);
             var sortedColumnIndex = sortedColumns[0];
             var ascending = multiColumnHeader.IsSortedAscending(sortedColumnIndex);
             switch (sortedColumnIndex)
@@ -111,7 +111,7 @@ namespace CrazySDK.Script.Editor
 
         protected override void RowGUI(RowGUIArgs args)
         {
-            var item = (TreeViewItem<TextureTreeElement>) args.item;
+            var item = (TreeViewItem<TextureTreeItem>) args.item;
 
             for (int i = 0; i < args.GetNumVisibleColumns(); ++i)
             {
@@ -119,7 +119,7 @@ namespace CrazySDK.Script.Editor
             }
         }
 
-        private void CellGUI(Rect cellRect, TreeViewItem<TextureTreeElement> item, int column, ref RowGUIArgs args)
+        private void CellGUI(Rect cellRect, TreeViewItem<TextureTreeItem> item, int column, ref RowGUIArgs args)
         {
             CenterRectUsingSingleLineHeight(ref cellRect);
             switch (column)

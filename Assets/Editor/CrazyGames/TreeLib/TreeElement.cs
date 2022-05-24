@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace CrazySDK.Script.Editor.TreeLib
+namespace Editor.CrazyGames.TreeLib
 {
     [Serializable]
     public class TreeElement

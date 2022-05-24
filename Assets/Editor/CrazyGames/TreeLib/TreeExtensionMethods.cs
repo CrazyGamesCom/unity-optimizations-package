@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 
-namespace CrazySDK.Script.Editor.TreeLib
+namespace Editor.CrazyGames.TreeLib
 {
     internal static class TreeExtensionMethods
     {

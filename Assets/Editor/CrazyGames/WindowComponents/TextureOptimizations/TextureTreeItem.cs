@@ -1,12 +1,11 @@
 ﻿using System;
 using System.IO;
-using CrazySDK.Script.Editor.TreeLib;
+using Editor.CrazyGames.TreeLib;
 using UnityEditor;
-using UnityEngine;
 
-namespace CrazySDK.Script.Editor
+namespace Editor.CrazyGames.WindowComponents.TextureOptimizations
 {
-    public class TextureTreeElement : TreeElement
+    public class TextureTreeItem : TreeElement
     {
         public readonly string texturePath;
         public readonly string textureName;
@@ -20,7 +19,7 @@ namespace CrazySDK.Script.Editor
         //  private string texturePath;
         // private TextureImporter textureImporter;
 
-        public TextureTreeElement(string name, int depth, int id, string texturePath, TextureImporter textureImporter) : base(name, depth, id)
+        public TextureTreeItem(string name, int depth, int id, string texturePath, TextureImporter textureImporter) : base(name, depth, id)
         {
             if (depth == -1)
                 return;

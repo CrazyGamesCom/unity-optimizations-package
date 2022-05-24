@@ -2,31 +2,12 @@
 using UnityEditor;
 using UnityEngine;
 
-namespace CrazySDK.Script.Editor
+namespace Editor.CrazyGames.WindowComponents
 {
-    public class WebGLOptimizations : EditorWindow
+    public class ExportOptimizations
     {
-        [MenuItem("CrazySDK/WebGL optimizations")]
-        public static void ShowWindow()
+        public static void RenderGUI()
         {
-            var window = GetWindow(typeof(WebGLOptimizations));
-            window.minSize = new Vector2(350, 200);
-        }
-
-        void OnGUI()
-        {
-            EditorGUILayout.BeginVertical(EditorStyles.inspectorDefaultMargins);
-            GUILayout.Label("WebGL optimizations", new GUIStyle
-            {
-                fontStyle = FontStyle.Bold,
-                fontSize = 20,
-                normal =
-                {
-                    textColor = EditorStyles.label.normal.textColor
-                }
-            });
-            EditorGUILayout.Space(10);
-
             if (typeof(PlayerSettings.WebGL).GetProperty("compressionFormat") != null)
             {
                 var compressionOk = PlayerSettings.WebGL.compressionFormat == WebGLCompressionFormat.Brotli;
@@ -57,12 +38,14 @@ namespace CrazySDK.Script.Editor
                     "To decrease the bundle size even more, you can select Medium or High stripping from Player Settings, but first of all read about them on our developer documentation.");
             }
 
-            if (GUILayout.Button("Read more on our developer documentation"))
+            EditorGUILayout.BeginHorizontal();
+            GUILayout.FlexibleSpace();
+            if (GUILayout.Button("Read more tips on our developer documentation"))
             {
                 Application.OpenURL("https://developer.crazygames.com/unity-export-tips");
             }
-
-            EditorGUILayout.EndVertical();
+            GUILayout.FlexibleSpace();
+            EditorGUILayout.EndHorizontal();
         }
 
 
