@@ -11,10 +11,10 @@ namespace CrazyGames
         private int _toolbarInt = 0;
         private readonly string[] _toolbarStrings = {"Export", "Textures", "About"};
 
-        [MenuItem("CrazyGames/Optimizer")]
+        [MenuItem("CrazyGames/WebGL Optimizer")]
         public static void ShowWindow()
         {
-            var window = GetWindow(typeof(OptimizerWindow), false, "WebGL Optimizations");
+            var window = GetWindow(typeof(OptimizerWindow), false, "WebGL Optimizer");
             window.minSize = new Vector2(800, 600);
         }
 
