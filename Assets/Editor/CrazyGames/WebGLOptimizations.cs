@@ -43,6 +43,10 @@ namespace Editor.CrazyGames
 
         void RenderCredits()
         {
+            // don't render the about section when the package is integrated in CrazySDK
+            if (Type.GetType("CrazyGames.SiteLock") != null)
+                return;
+            
             EditorGUILayout.BeginHorizontal();
             GUILayout.FlexibleSpace();
 
