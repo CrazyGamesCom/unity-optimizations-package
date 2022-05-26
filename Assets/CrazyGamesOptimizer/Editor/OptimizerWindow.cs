@@ -6,15 +6,15 @@ using UnityEngine;
 
 namespace CrazyGames
 {
-    public class WebGLOptimizations : EditorWindow
+    public class OptimizerWindow : EditorWindow
     {
         private int _toolbarInt = 0;
         private readonly string[] _toolbarStrings = {"Export", "Textures", "About"};
 
-        [MenuItem("CrazyGames/WebGL optimizations")]
+        [MenuItem("CrazyGames/Optimizer")]
         public static void ShowWindow()
         {
-            var window = GetWindow(typeof(WebGLOptimizations), false, "WebGL Optimizations");
+            var window = GetWindow(typeof(OptimizerWindow), false, "WebGL Optimizations");
             window.minSize = new Vector2(800, 600);
         }
 
