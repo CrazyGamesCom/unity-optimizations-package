@@ -2,7 +2,7 @@
 using UnityEditor;
 using UnityEngine;
 
-namespace Editor.CrazyGames.WindowComponents
+namespace CrazyGames.WindowComponents
 {
     public class ExportOptimizations
     {

@@ -1,10 +1,10 @@
 ﻿using System.Collections.Generic;
-using Editor.CrazyGames.TreeLib;
+using CrazyGames.TreeLib;
 using UnityEditor;
 using UnityEditor.IMGUI.Controls;
 using UnityEngine;
 
-namespace Editor.CrazyGames.WindowComponents.TextureOptimizations
+namespace CrazyGames.WindowComponents.TextureOptimizations
 {
     public class TextureOptimization : EditorWindow
     {

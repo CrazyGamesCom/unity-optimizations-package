@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace Editor.CrazyGames.TreeLib
+namespace CrazyGames.TreeLib
 {
     // TreeElementUtility and TreeElement are useful helper classes for backend tree data structures.
     // See tests at the bottom for examples of how to use.

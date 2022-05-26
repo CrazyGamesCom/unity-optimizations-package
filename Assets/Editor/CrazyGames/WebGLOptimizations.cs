@@ -1,10 +1,10 @@
 ﻿using System;
-using Editor.CrazyGames.WindowComponents;
-using Editor.CrazyGames.WindowComponents.TextureOptimizations;
+using CrazyGames.WindowComponents;
+using CrazyGames.WindowComponents.TextureOptimizations;
 using UnityEditor;
 using UnityEngine;
 
-namespace Editor.CrazyGames
+namespace CrazyGames
 {
     public class WebGLOptimizations : EditorWindow
     {

@@ -1,9 +1,9 @@
 ﻿using System;
 using System.IO;
-using Editor.CrazyGames.TreeLib;
+using CrazyGames.TreeLib;
 using UnityEditor;
 
-namespace Editor.CrazyGames.WindowComponents.TextureOptimizations
+namespace CrazyGames.WindowComponents.TextureOptimizations
 {
     public class TextureTreeItem : TreeElement
     {

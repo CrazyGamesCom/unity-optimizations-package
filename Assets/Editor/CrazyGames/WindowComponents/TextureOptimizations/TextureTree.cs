@@ -1,12 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using Editor.CrazyGames.TreeLib;
+using CrazyGames.TreeLib;
 using UnityEditor;
 using UnityEditor.IMGUI.Controls;
 using UnityEngine;
 
-namespace Editor.CrazyGames.WindowComponents.TextureOptimizations
+namespace CrazyGames.WindowComponents.TextureOptimizations
 {
     class MultiColumnTree : TreeViewWithTreeModel<TextureTreeItem>
     {
