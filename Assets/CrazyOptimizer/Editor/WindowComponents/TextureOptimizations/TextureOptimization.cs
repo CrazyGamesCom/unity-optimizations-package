@@ -37,7 +37,7 @@ namespace CrazyGames.WindowComponents.TextureOptimizations
             EditorGUILayout.Space(5);
 
             GUILayout.Label(
-                "This utility gives you an overview of all the textures in your project. By optimizing various settings you will be able to considerable decrease your final build size. You can click on a texture to select it in the Project view.",
+                "This utility gives you an overview of all the textures in your project. By optimizing various settings you will be able to considerably decrease your final build size. You can click on a texture to select it in the Project view.",
                 EditorStyles.wordWrappedLabel);
 
 
