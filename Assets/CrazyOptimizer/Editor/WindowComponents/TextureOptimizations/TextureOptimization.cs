@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using CrazyGames.TreeLib;
 using UnityEditor;
 using UnityEditor.IMGUI.Controls;
@@ -73,8 +74,15 @@ namespace CrazyGames.WindowComponents.TextureOptimizations
             {
                 idIncrement++;
                 var texturePath = AssetDatabase.GUIDToAssetPath(guid);
-                var textureImporter = (TextureImporter) AssetImporter.GetAtPath(texturePath);
-                treeElements.Add(new TextureTreeItem("Texture2D", 0, idIncrement, texturePath, textureImporter));
+                try
+                {
+                    var textureImporter = (TextureImporter) AssetImporter.GetAtPath(texturePath);
+                    treeElements.Add(new TextureTreeItem("Texture2D", 0, idIncrement, texturePath, textureImporter));
+                }
+                catch (Exception e)
+                {
+                    Debug.LogWarning("Failed to analyze texture at path: " + texturePath);
+                }
             }
 
             var treeModel = new TreeModel<TextureTreeItem>(treeElements);
