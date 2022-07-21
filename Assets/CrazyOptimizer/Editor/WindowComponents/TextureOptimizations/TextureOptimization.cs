@@ -147,6 +147,11 @@ namespace CrazyGames.WindowComponents.TextureOptimizations
         static void AnalyzeTextures()
         {
             _isAnalyzing = true;
+            if (OptimizerWindow.EditorWindowInstance != null)
+            {
+                OptimizerWindow.EditorWindowInstance.Repaint();
+            }
+
             var usedTexturePaths = new HashSet<string>();
 
             GetUsedTexturesInBuildScenes().ForEach(path => usedTexturePaths.Add(path));
@@ -188,6 +193,10 @@ namespace CrazyGames.WindowComponents.TextureOptimizations
                 });
             _textureCompressionTree = new MultiColumnTree(treeViewState, new MultiColumnHeader(_multiColumnHeaderState), treeModel);
             _isAnalyzing = false;
+            if (OptimizerWindow.EditorWindowInstance != null)
+            {
+                OptimizerWindow.EditorWindowInstance.Repaint();
+            }
         }
     }
 }

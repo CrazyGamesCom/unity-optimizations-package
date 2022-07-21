@@ -10,12 +10,13 @@ namespace CrazyGames
     {
         private int _toolbarInt = 0;
         private readonly string[] _toolbarStrings = {"Export", "Textures", "About"};
+        public static EditorWindow EditorWindowInstance;
 
         [MenuItem("CrazyGames/WebGL Optimizer")]
         public static void ShowWindow()
         {
-            var window = GetWindow(typeof(OptimizerWindow), false, "WebGL Optimizer");
-            window.minSize = new Vector2(800, 600);
+            EditorWindowInstance = GetWindow(typeof(OptimizerWindow), false, "WebGL Optimizer");
+            EditorWindowInstance.minSize = new Vector2(800, 600);
         }
 
         void OnGUI()
@@ -46,7 +47,7 @@ namespace CrazyGames
             // don't render the about section when the package is integrated in CrazySDK
             if (Type.GetType("CrazyGames.SiteLock") != null)
                 return;
-            
+
             EditorGUILayout.BeginHorizontal();
             GUILayout.FlexibleSpace();
 
@@ -68,6 +69,11 @@ namespace CrazyGames
 
             GUILayout.FlexibleSpace();
             EditorGUILayout.EndHorizontal();
+        }
+
+        private void OnDestroy()
+        {
+            EditorWindowInstance = null;
         }
     }
 }
