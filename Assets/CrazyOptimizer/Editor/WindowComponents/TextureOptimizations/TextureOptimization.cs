@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Text.RegularExpressions;
 using CrazyGames.TreeLib;
 using UnityEditor;
 using UnityEditor.IMGUI.Controls;
@@ -12,6 +14,7 @@ namespace CrazyGames.WindowComponents.TextureOptimizations
         private static MultiColumnHeaderState _multiColumnHeaderState;
         private static MultiColumnTree _textureCompressionTree;
 
+        private static bool _isAnalyzing;
 
         public static void RenderGUI()
         {
@@ -30,7 +33,7 @@ namespace CrazyGames.WindowComponents.TextureOptimizations
             EditorGUILayout.EndVertical();
 
             EditorGUILayout.Space(5);
-            if (GUILayout.Button("Analyze textures"))
+            if (GUILayout.Button(_isAnalyzing ? "Analyzing..." : "Analyze textures"))
             {
                 AnalyzeTextures();
             }
@@ -61,19 +64,107 @@ namespace CrazyGames.WindowComponents.TextureOptimizations
             EditorGUILayout.EndHorizontal();
         }
 
+        /**
+         * Find the paths of the scenes that will end up in the final build of the game.
+         */
+        static List<string> GetScenesInBuildPath()
+        {
+            var scenesInBuild = new List<string>();
+            foreach (var scene in EditorBuildSettings.scenes)
+            {
+                if (scene.enabled)
+                {
+                    scenesInBuild.Add(scene.path);
+                }
+            }
+
+            return scenesInBuild;
+        }
+
+        /**
+         * Find recursively the textures on which this scene depends.
+         */
+        static List<string> GetSceneTextureDependencies(string scenePath)
+        {
+            var textureDependencies = new List<string>();
+            var assetDependencies = AssetDatabase.GetDependencies(scenePath, true);
+            foreach (var assetDependency in assetDependencies)
+            {
+                if (AssetDatabase.GetMainAssetTypeAtPath(assetDependency) == typeof(Texture2D))
+                {
+                    textureDependencies.Add(assetDependency);
+                }
+            }
+
+            return textureDependencies;
+        }
+
+        static List<string> GetUsedTexturesInBuildScenes()
+        {
+            var usedTexturePaths = new HashSet<string>();
+
+            var scenesInBuild = GetScenesInBuildPath();
+            foreach (var scenePath in scenesInBuild)
+            {
+                var texturesUsedInScene = GetSceneTextureDependencies(scenePath);
+                foreach (var texturePath in texturesUsedInScene)
+                {
+                    usedTexturePaths.Add(texturePath);
+                }
+            }
+
+            return usedTexturePaths.ToList();
+        }
+
+        /**
+         * Get the list of textures in the Resources folders, or on which assets from the Resources folder depend.
+         */
+        static List<string> GetUsedTexturesInResources()
+        {
+            var usedTexturePaths = new HashSet<string>();
+            var allAssetPaths = AssetDatabase.FindAssets("", new[] {"Assets"}).Select(AssetDatabase.GUIDToAssetPath).ToList();
+
+            // keep only the assets inside a Resources folder, that is not inside an Editor folder
+            var rx = new Regex(@"\w*(?<!Editor\/)Resources\/", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+            allAssetPaths = allAssetPaths.Where(assetPath => (rx.IsMatch(assetPath))).ToList();
+
+            // find all the textures on which the assets from the Resources folder depend
+            foreach (var assetPath in allAssetPaths)
+            {
+                var assetDependencies = AssetDatabase.GetDependencies(assetPath, true);
+                foreach (var assetDependency in assetDependencies)
+                {
+                    if (AssetDatabase.GetMainAssetTypeAtPath(assetDependency) == typeof(Texture2D))
+                    {
+                        usedTexturePaths.Add(assetDependency);
+                    }
+                }
+            }
+
+            return usedTexturePaths.ToList();
+        }
 
         static void AnalyzeTextures()
         {
+            _isAnalyzing = true;
+            if (OptimizerWindow.EditorWindowInstance != null)
+            {
+                OptimizerWindow.EditorWindowInstance.Repaint();
+            }
+
+            var usedTexturePaths = new HashSet<string>();
+
+            GetUsedTexturesInBuildScenes().ForEach(path => usedTexturePaths.Add(path));
+            GetUsedTexturesInResources().ForEach(path => usedTexturePaths.Add(path));
+
             var treeElements = new List<TextureTreeItem>();
-            var textureGuids = AssetDatabase.FindAssets("t:texture2D", new[] {"Assets"});
             var idIncrement = 0;
             var root = new TextureTreeItem("Root", -1, idIncrement, null, null);
             treeElements.Add(root);
 
-            foreach (var guid in textureGuids)
+            foreach (var texturePath in usedTexturePaths)
             {
                 idIncrement++;
-                var texturePath = AssetDatabase.GUIDToAssetPath(guid);
                 try
                 {
                     var textureImporter = (TextureImporter) AssetImporter.GetAtPath(texturePath);
@@ -101,6 +192,11 @@ namespace CrazyGames.WindowComponents.TextureOptimizations
                         {headerContent = new GUIContent() {text = "Crunch comp. quality"}, width = 128, minWidth = 128, canSort = true},
                 });
             _textureCompressionTree = new MultiColumnTree(treeViewState, new MultiColumnHeader(_multiColumnHeaderState), treeModel);
+            _isAnalyzing = false;
+            if (OptimizerWindow.EditorWindowInstance != null)
+            {
+                OptimizerWindow.EditorWindowInstance.Repaint();
+            }
         }
     }
 }
