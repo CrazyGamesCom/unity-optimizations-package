@@ -1,6 +1,6 @@
 # Unity WebGL optimizations
 
-The purpose of this package is to help you optimize your game, by reducing the build size and increasing the performance. At the moment, it is targeted to WebGL games.
+The purpose of this package is to help you optimize your game by reducing the build size and increasing the performance. At the moment, it is targeted at WebGL games.
 
 If you are using our CrazySDK, this package will come integrated with it.
 
