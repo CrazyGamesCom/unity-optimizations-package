@@ -8,9 +8,9 @@ using UnityEngine;
 
 namespace CrazyGames.WindowComponents.TextureOptimizations
 {
-    class MultiColumnTree : TreeViewWithTreeModel<TextureTreeItem>
+    class TextureTree : TreeViewWithTreeModel<TextureTreeItem>
     {
-        public MultiColumnTree(TreeViewState treeViewState, MultiColumnHeader multiColumnHeader, TreeModel<TextureTreeItem> model)
+        public TextureTree(TreeViewState treeViewState, MultiColumnHeader multiColumnHeader, TreeModel<TextureTreeItem> model)
             : base(treeViewState, multiColumnHeader, model)
         {
             showBorder = true;

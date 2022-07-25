@@ -6,11 +6,11 @@ If you are using our CrazySDK, this package will come integrated with it.
 
 ## Export optimizations
 
+The export optimizations tab contains a checklist of options that should be correctly set to improve the performance and decrease the bundle size of your WebGL game.
+
 ![Export optimizations](Docs/export.png?raw=true "Export optimizations")
 
 ## Texture optimizations
-
-![Texture optimizations](Docs/textures.png?raw=true "Texture optimizations")
 
 The texture optimizations tool provides an overview of all the textures in your project, and also various tips about optimizing the size they occupy in the final build.
 
@@ -20,6 +20,18 @@ It finds textures in your project in these 2 ways:
 2. By fiding textures in `Resources` folders, or by recursively finding textures on which the assets from the Resources folders depend.
 
 This means that the texture detection may miss more intricate textures that are not covered by the above cases.
+
+You can toggle the "Include files from Packages" options to also display textures from the installed packages, for example from Package Manager.
+
+![Texture optimizations](Docs/textures.png?raw=true "Texture optimizations")
+
+# Build logs analyzer
+
+The build logs analyzer parses the Editor.log file to extract the list of files included in your build and the space they occupy. You can use this utility to furthermore analyze the files included in your project.
+
+Similar to the texture optimizer, you can toggle the "Include files from Packages" options to also display textures from the installed packages, for example from Package Manager.
+
+![Texture optimizations](Docs/buildLogs.png?raw=true "Build logs")
 
 ## CrazyGames
 
