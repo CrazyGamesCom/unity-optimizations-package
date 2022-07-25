@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using CrazyGames;
 using CrazyGames.TreeLib;
 using CrazyGames.WindowComponents.TextureOptimizations;
 using UnityEditor;
@@ -102,7 +103,11 @@ namespace CrazyOptimizer.Editor.WindowComponents.BuildLogs
         {
             _isAnalyzing = true;
             _errorMessage = "";
-            var editorLogStr = "";
+            if (OptimizerWindow.EditorWindowInstance != null)
+            {
+                OptimizerWindow.EditorWindowInstance.Repaint();
+            }
+            string editorLogStr;
             try
             {
                 editorLogStr = GetEditorLog();
@@ -171,6 +176,10 @@ namespace CrazyOptimizer.Editor.WindowComponents.BuildLogs
             });
             _buildLogTree = new BuildLogTree(treeViewState, new MultiColumnHeader(_multiColumnHeaderState), treeModel);
             _isAnalyzing = false;
+            if (OptimizerWindow.EditorWindowInstance != null)
+            {
+                OptimizerWindow.EditorWindowInstance.Repaint();
+            }
         }
     }
 }
