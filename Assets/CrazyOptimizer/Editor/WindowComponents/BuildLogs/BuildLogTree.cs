@@ -6,11 +6,11 @@ using UnityEditor;
 using UnityEditor.IMGUI.Controls;
 using UnityEngine;
 
-namespace CrazyGames.WindowComponents.TextureOptimizations
+namespace CrazyOptimizer.Editor.WindowComponents.BuildLogs
 {
-    class TextureTree : TreeViewWithTreeModel<TextureTreeItem>
+    class BuildLogTree : TreeViewWithTreeModel<BuildLogTreeItem>
     {
-        public TextureTree(TreeViewState treeViewState, MultiColumnHeader multiColumnHeader, TreeModel<TextureTreeItem> model)
+        public BuildLogTree(TreeViewState treeViewState, MultiColumnHeader multiColumnHeader, TreeModel<BuildLogTreeItem> model)
             : base(treeViewState, multiColumnHeader, model)
         {
             showBorder = true;
@@ -35,28 +35,19 @@ namespace CrazyGames.WindowComponents.TextureOptimizations
             if (sortedColumns.Length == 0)
                 return;
 
-            var items = rootItem.children.Cast<TreeViewItem<TextureTreeItem>>().OrderBy(i => i.data.textureName);
+            var items = rootItem.children.Cast<TreeViewItem<BuildLogTreeItem>>().OrderBy(i => i.data.size);
             var sortedColumnIndex = sortedColumns[0];
             var ascending = multiColumnHeader.IsSortedAscending(sortedColumnIndex);
             switch (sortedColumnIndex)
             {
                 case 0:
-                    items = items.Order(i => i.data.textureName, ascending);
+                    items = items.Order(i => i.data.sizeInBytes, ascending);
                     break;
                 case 1:
-                    items = items.Order(i => i.data.textureType, ascending);
+                    items = items.Order(i => i.data.sizePercentage, ascending);
                     break;
                 case 2:
-                    items = items.Order(i => i.data.textureMaxSize, ascending);
-                    break;
-                case 3:
-                    items = items.Order(i => i.data.compression, ascending);
-                    break;
-                case 4:
-                    items = items.Order(i => i.data.crunchCompressionQuality, ascending);
-                    break;
-                case 5:
-                    items = items.Order(i => i.data.crunchCompressionQuality, ascending);
+                    items = items.Order(i => i.data.filePath, ascending);
                     break;
             }
 
@@ -111,7 +102,7 @@ namespace CrazyGames.WindowComponents.TextureOptimizations
 
         protected override void RowGUI(RowGUIArgs args)
         {
-            var item = (TreeViewItem<TextureTreeItem>) args.item;
+            var item = (TreeViewItem<BuildLogTreeItem>) args.item;
 
             for (int i = 0; i < args.GetNumVisibleColumns(); ++i)
             {
@@ -119,28 +110,19 @@ namespace CrazyGames.WindowComponents.TextureOptimizations
             }
         }
 
-        private void CellGUI(Rect cellRect, TreeViewItem<TextureTreeItem> item, int column, ref RowGUIArgs args)
+        private void CellGUI(Rect cellRect, TreeViewItem<BuildLogTreeItem> item, int column, ref RowGUIArgs args)
         {
             CenterRectUsingSingleLineHeight(ref cellRect);
             switch (column)
             {
                 case 0:
-                    GUI.Label(cellRect, item.data.textureName);
+                    GUI.Label(cellRect, $"{item.data.size} {item.data.sizeUnit}");
                     break;
                 case 1:
-                    GUI.Label(cellRect, item.data.textureType.ToString());
+                    GUI.Label(cellRect, $"{item.data.sizePercentage}%");
                     break;
                 case 2:
-                    GUI.Label(cellRect, item.data.textureMaxSize.ToString());
-                    break;
-                case 3:
-                    GUI.Label(cellRect, item.data.compression.ToString());
-                    break;
-                case 4:
-                    GUI.Label(cellRect, item.data.hasCrunchCompression ? "yes" : "no");
-                    break;
-                case 5:
-                    GUI.Label(cellRect, item.data.crunchCompressionQuality.ToString());
+                    GUI.Label(cellRect, item.data.filePath);
                     break;
             }
         }
@@ -149,7 +131,7 @@ namespace CrazyGames.WindowComponents.TextureOptimizations
         {
             base.SelectionChanged(selectedIds);
             var item = treeModel.Find(selectedIds.First());
-            Selection.activeObject = AssetDatabase.LoadMainAssetAtPath(item.texturePath);
+            Selection.activeObject = AssetDatabase.LoadMainAssetAtPath(item.filePath);
         }
     }
 }

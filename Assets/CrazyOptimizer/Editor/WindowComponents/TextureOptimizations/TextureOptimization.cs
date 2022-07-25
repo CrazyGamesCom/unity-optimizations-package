@@ -12,7 +12,7 @@ namespace CrazyGames.WindowComponents.TextureOptimizations
     public class TextureOptimization : EditorWindow
     {
         private static MultiColumnHeaderState _multiColumnHeaderState;
-        private static MultiColumnTree _textureCompressionTree;
+        private static TextureTree _textureCompressionTree;
 
         private static bool _isAnalyzing;
 
@@ -191,7 +191,7 @@ namespace CrazyGames.WindowComponents.TextureOptimizations
                     new MultiColumnHeaderState.Column()
                         {headerContent = new GUIContent() {text = "Crunch comp. quality"}, width = 128, minWidth = 128, canSort = true},
                 });
-            _textureCompressionTree = new MultiColumnTree(treeViewState, new MultiColumnHeader(_multiColumnHeaderState), treeModel);
+            _textureCompressionTree = new TextureTree(treeViewState, new MultiColumnHeader(_multiColumnHeaderState), treeModel);
             _isAnalyzing = false;
             if (OptimizerWindow.EditorWindowInstance != null)
             {
