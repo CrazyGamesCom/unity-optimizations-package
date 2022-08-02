@@ -16,12 +16,15 @@ namespace CrazyOptimizer.Editor.WindowComponents.BuildLogs
         {
             get
             {
-                return sizeUnit switch
+                switch (sizeUnit)
                 {
-                    "kb" => size * 1024,
-                    "mb" => size * 1024 * 1024,
-                    _ => throw new Exception("Unknown size unit " + sizeUnit)
-                };
+                    case "kb":
+                        return size * 1024;
+                    case "mb":
+                        return size * 1024 * 1024;
+                    default:
+                        throw new Exception("Unknown size unit " + sizeUnit);
+                }
             }
         }
 

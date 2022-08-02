@@ -167,7 +167,7 @@ namespace CrazyOptimizer.Editor.WindowComponents.BuildLogs
 
             var treeModel = new TreeModel<BuildLogTreeItem>(treeElements);
             var treeViewState = new TreeViewState();
-            _multiColumnHeaderState ??= new MultiColumnHeaderState(new[]
+            _multiColumnHeaderState = _multiColumnHeaderState ?? new MultiColumnHeaderState(new[]
             {
                 // when adding a new column don't forget to check the sorting method, and the CellGUI method
                 new MultiColumnHeaderState.Column() {headerContent = new GUIContent() {text = "Size"}, width = 80, minWidth = 60, canSort = true},
