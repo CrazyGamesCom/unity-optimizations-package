@@ -12,9 +12,10 @@ namespace CrazyGames.WindowComponents.TextureOptimizations
     public class TextureOptimization : EditorWindow
     {
         private static MultiColumnHeaderState _multiColumnHeaderState;
-        private static MultiColumnTree _textureCompressionTree;
+        private static TextureTree _textureCompressionTree;
 
         private static bool _isAnalyzing;
+        private static bool _includeFilesFromPackages;
 
         public static void RenderGUI()
         {
@@ -33,11 +34,20 @@ namespace CrazyGames.WindowComponents.TextureOptimizations
             EditorGUILayout.EndVertical();
 
             EditorGUILayout.Space(5);
-            if (GUILayout.Button(_isAnalyzing ? "Analyzing..." : "Analyze textures"))
+            EditorGUILayout.BeginHorizontal();
+            GUILayout.FlexibleSpace();
+            if (GUILayout.Button(_isAnalyzing ? "Analyzing..." : "Analyze textures", GUILayout.Width(200)))
             {
                 AnalyzeTextures();
             }
 
+            var originalValue = EditorGUIUtility.labelWidth;
+            EditorGUIUtility.labelWidth = 160;
+            _includeFilesFromPackages = EditorGUILayout.Toggle("Include files from Packages", _includeFilesFromPackages);
+            EditorGUIUtility.labelWidth = originalValue;
+            GUILayout.FlexibleSpace();
+
+            EditorGUILayout.EndHorizontal();
             EditorGUILayout.Space(5);
 
             GUILayout.Label(
@@ -164,6 +174,11 @@ namespace CrazyGames.WindowComponents.TextureOptimizations
 
             foreach (var texturePath in usedTexturePaths)
             {
+                if (texturePath.StartsWith("Packages/") && !_includeFilesFromPackages)
+                {
+                    continue;
+                }
+
                 idIncrement++;
                 try
                 {
@@ -191,7 +206,7 @@ namespace CrazyGames.WindowComponents.TextureOptimizations
                     new MultiColumnHeaderState.Column()
                         {headerContent = new GUIContent() {text = "Crunch comp. quality"}, width = 128, minWidth = 128, canSort = true},
                 });
-            _textureCompressionTree = new MultiColumnTree(treeViewState, new MultiColumnHeader(_multiColumnHeaderState), treeModel);
+            _textureCompressionTree = new TextureTree(treeViewState, new MultiColumnHeader(_multiColumnHeaderState), treeModel);
             _isAnalyzing = false;
             if (OptimizerWindow.EditorWindowInstance != null)
             {
