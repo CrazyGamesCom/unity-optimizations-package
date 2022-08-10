@@ -1,6 +1,7 @@
 ﻿using System;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 namespace CrazyGames.WindowComponents
 {
@@ -38,12 +39,29 @@ namespace CrazyGames.WindowComponents
                     "To decrease the bundle size even more, you can select Medium or High stripping from Player Settings, but first of all read about them on our developer documentation.");
             }
 
+            if (UnityEngine.Rendering.GraphicsSettings.renderPipelineAsset != null)
+            {
+                var additionalInfoStyle = new GUIStyle
+                {
+                    wordWrap = true,
+                    normal =
+                    {
+                        textColor = EditorStyles.label.normal.textColor
+                    }
+                };
+
+                GUILayout.Label(
+                    "If you are using URP but don't use post-processing we recommend disabling them. This will reduce approximately 1mb from your final build size. Check the link below for more info.",
+                    additionalInfoStyle);
+            }
+
             EditorGUILayout.BeginHorizontal();
             GUILayout.FlexibleSpace();
             if (GUILayout.Button("Read more tips on our developer documentation"))
             {
                 Application.OpenURL("https://developer.crazygames.com/unity-export-tips");
             }
+
             GUILayout.FlexibleSpace();
             EditorGUILayout.EndHorizontal();
         }
