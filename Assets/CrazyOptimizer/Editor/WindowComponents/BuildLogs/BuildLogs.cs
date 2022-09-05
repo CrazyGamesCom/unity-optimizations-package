@@ -107,6 +107,7 @@ namespace CrazyOptimizer.Editor.WindowComponents.BuildLogs
             {
                 OptimizerWindow.EditorWindowInstance.Repaint();
             }
+
             string editorLogStr;
             try
             {
@@ -148,13 +149,16 @@ namespace CrazyOptimizer.Editor.WindowComponents.BuildLogs
             {
                 var line = buildReportLines[0];
                 buildReportLines.RemoveAt(0);
+                // the line has the following format " 0.1 kb	 0.0% Packages/com.unity.timeline/Runtime/Animation/ICurvesOwner.cs"
 
                 idIncrement++;
                 var splitLine = line.Replace("\t", " ").Split(new[] {" "}, StringSplitOptions.RemoveEmptyEntries);
                 var size = float.Parse(splitLine[0], CultureInfo.InvariantCulture.NumberFormat);
                 var sizeUnit = splitLine[1];
                 var sizePercentage = float.Parse(splitLine[2].Replace("%", ""), CultureInfo.InvariantCulture.NumberFormat);
-                var path = splitLine[3];
+                
+                // split the original line by percentage ("1.2%"), last part is the path of the asset
+                var path = line.Split(new[] {splitLine[2]}, StringSplitOptions.None).Last().Trim();
 
                 if (path.StartsWith("Packages/") && !_includeFilesFromPackages)
                 {
