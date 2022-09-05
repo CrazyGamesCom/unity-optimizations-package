@@ -4,6 +4,8 @@ The purpose of this package is to help you optimize your game by reducing the bu
 
 If you are using our CrazySDK, this package will come integrated with it.
 
+The package can be found in the `Tools > WebGL Optimizer` menu option.
+
 ## Export optimizations
 
 The export optimizations tab contains a checklist of options that should be correctly set to improve the performance and decrease the bundle size of your WebGL game.
