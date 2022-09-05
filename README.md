@@ -1,4 +1,4 @@
-# Unity WebGL optimizations
+# Unity WebGL Optimizer
 
 The purpose of this package is to help you optimize your game by reducing the build size and increasing the performance. At the moment, it is targeted at WebGL games.
 
