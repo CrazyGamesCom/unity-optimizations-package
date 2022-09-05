@@ -19,7 +19,7 @@ The texture optimizations tool provides an overview of all the textures in your 
 It finds textures in your project in these 2 ways:
 
 1. By looking at the scenes included in the build (Build settings > Scenes in build), and finding recursively all the textures on which those scenes depend.
-2. By fiding textures in `Resources` folders, or by recursively finding textures on which the assets from the Resources folders depend.
+2. By finding textures in `Resources` folders, or by recursively finding textures on which the assets from the Resources folders depend.
 
 This means that the texture detection may miss more intricate textures that are not covered by the above cases.
 
