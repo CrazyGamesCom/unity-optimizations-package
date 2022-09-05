@@ -13,7 +13,7 @@ namespace CrazyGames
         private readonly string[] _toolbarStrings = {"Export", "Textures", "Build logs", "About"};
         public static EditorWindow EditorWindowInstance;
 
-        [MenuItem("CrazyGames/WebGL Optimizer")]
+        [MenuItem("Tools/WebGL Optimizer")]
         public static void ShowWindow()
         {
             EditorWindowInstance = GetWindow(typeof(OptimizerWindow), false, "WebGL Optimizer");
