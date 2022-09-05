@@ -25,7 +25,7 @@ You can toggle the "Include files from Packages" options to also display texture
 
 ![Texture optimizations](Docs/textures.png?raw=true "Texture optimizations")
 
-# Build logs analyzer
+## Build logs analyzer
 
 The build logs analyzer parses the Editor.log file to extract the list of files included in your build and the space they occupy. You can use this utility to furthermore analyze the files included in your project.
 
