@@ -34,6 +34,12 @@ You can toggle the "Include files from Packages" options to also display texture
 
 ![Texture optimizations](Docs/textures.png?raw=true "Texture optimizations")
 
+## Model optimizations
+
+The model optimizations tool works very similar to the texture optimizations tool, but instead of textures it finds models in your project and provides various tips about optimizing them.
+
+![Model optimizations](Docs/models.png?raw=true "Model optimizations")
+
 ## Build logs analyzer
 
 The build logs analyzer parses the Editor.log file to extract the list of files included in your build and the space they occupy. You can use this utility to furthermore analyze the files included in your project.
