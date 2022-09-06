@@ -6,6 +6,8 @@ If you are using our CrazySDK, this package will come integrated with it.
 
 The package can be found in the `Tools > WebGL Optimizer` menu option.
 
+![Menu option](Docs/menu-option.png?raw=true)
+
 Minimum required versions:
  - C# 6.0
  - Unity 2019
@@ -37,7 +39,7 @@ The build logs analyzer parses the Editor.log file to extract the list of files 
 
 Similar to the texture optimizer, you can toggle the "Include files from Packages" options to also display textures from the installed packages, for example from Package Manager.
 
-![Texture optimizations](Docs/buildLogs.png?raw=true "Build logs")
+![Texture optimizations](Docs/build-logs.png?raw=true "Build logs")
 
 ## CrazyGames
 
