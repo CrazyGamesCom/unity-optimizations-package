@@ -44,12 +44,18 @@ namespace CrazyGames.WindowComponents.ModelOptimizations
                     items = items.Order(i => i.data.modelName, ascending);
                     break;
                 case 1:
-                    items = items.Order(i => i.data.isReadable, ascending);
+                    items = items.Order(i => i.data.isReadWriteEnabled, ascending);
                     break;
                 case 2:
-                    items = items.Order(i => i.data.meshCompression, ascending);
+                    items = items.Order(i => i.data.arePolygonsOptimized, ascending);
                     break;
                 case 3:
+                    items = items.Order(i => i.data.areVerticesOptimized, ascending);
+                    break;
+                case 4:
+                    items = items.Order(i => i.data.meshCompression, ascending);
+                    break;
+                case 5:
                     items = items.Order(i => i.data.animationCompression, ascending);
                     break;
             }
@@ -122,12 +128,18 @@ namespace CrazyGames.WindowComponents.ModelOptimizations
                     GUI.Label(cellRect, item.data.modelName);
                     break;
                 case 1:
-                    GUI.Label(cellRect, item.data.isReadable ? "yes" : "no");
+                    GUI.Label(cellRect, item.data.isReadWriteEnabled ? "yes" : "no");
                     break;
                 case 2:
-                    GUI.Label(cellRect, item.data.meshCompression);
+                    GUI.Label(cellRect, item.data.arePolygonsOptimized ? "yes" : "no");
                     break;
                 case 3:
+                    GUI.Label(cellRect, item.data.areVerticesOptimized ? "yes" : "no");
+                    break;
+                case 4:
+                    GUI.Label(cellRect, item.data.meshCompression);
+                    break;
+                case 5:
                     GUI.Label(cellRect, item.data.animationCompression);
                     break;
             }

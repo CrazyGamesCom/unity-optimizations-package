@@ -9,7 +9,9 @@ namespace CrazyGames.WindowComponents.ModelOptimizations
     {
         public readonly string modelPath;
         public readonly string modelName;
-        public readonly bool isReadable;
+        public readonly bool isReadWriteEnabled;
+        public readonly bool arePolygonsOptimized;
+        public readonly bool areVerticesOptimized;
         public readonly string meshCompression; // Off, Low, Medium, High (values in ModelImporterMeshCompression)
         public readonly string animationCompression; // Off, KeyframeReduction, KeyframeReductionAndCompression, Optimal (values in ModelImporterAnimationCompression)
 
@@ -20,7 +22,10 @@ namespace CrazyGames.WindowComponents.ModelOptimizations
 
             this.modelPath = modelPath;
             modelName = Path.GetFileName(modelPath);
-            isReadable = modelImporter.isReadable;
+
+            isReadWriteEnabled = modelImporter.isReadable;
+            arePolygonsOptimized = modelImporter.optimizeMeshPolygons;
+            areVerticesOptimized = modelImporter.optimizeMeshVertices;
 
             switch (modelImporter.meshCompression)
             {
