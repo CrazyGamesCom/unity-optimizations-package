@@ -4,13 +4,14 @@ The purpose of this package is to help you optimize your game by reducing the bu
 
 If you are using our CrazySDK, this package will come integrated with it.
 
-The package can be found in the `Tools > WebGL Optimizer` menu option.
+Minimum required versions:
+
+- C# 6.0
+- Unity 2019
+
+Once you have imported the package from GitHub, or our SDK which also contains this tool, it will be accessible in the `Tools > WebGL Optimizer` menu option.
 
 ![Menu option](Docs/menu-option.png?raw=true)
-
-Minimum required versions:
- - C# 6.0
- - Unity 2019
 
 ## Export optimizations
 
