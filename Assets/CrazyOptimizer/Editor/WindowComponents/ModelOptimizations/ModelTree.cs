@@ -34,29 +34,29 @@ namespace CrazyGames.WindowComponents.ModelOptimizations
             if (sortedColumns.Length == 0)
                 return;
 
-            var items = rootItem.children.Cast<TreeViewItem<ModelTreeItem>>().OrderBy(i => i.data.modelName);
+            var items = rootItem.children.Cast<TreeViewItem<ModelTreeItem>>().OrderBy(i => i.data.ModelName);
             var sortedColumnIndex = sortedColumns[0];
             var ascending = multiColumnHeader.IsSortedAscending(sortedColumnIndex);
 
             switch (sortedColumnIndex)
             {
                 case 0:
-                    items = items.Order(i => i.data.modelName, ascending);
+                    items = items.Order(i => i.data.ModelName, ascending);
                     break;
                 case 1:
-                    items = items.Order(i => i.data.isReadWriteEnabled, ascending);
+                    items = items.Order(i => i.data.IsReadWriteEnabled, ascending);
                     break;
                 case 2:
-                    items = items.Order(i => i.data.arePolygonsOptimized, ascending);
+                    items = items.Order(i => i.data.ArePolygonsOptimized, ascending);
                     break;
                 case 3:
-                    items = items.Order(i => i.data.areVerticesOptimized, ascending);
+                    items = items.Order(i => i.data.AreVerticesOptimized, ascending);
                     break;
                 case 4:
-                    items = items.Order(i => i.data.meshCompression, ascending);
+                    items = items.Order(i => i.data.MeshCompression, ascending);
                     break;
                 case 5:
-                    items = items.Order(i => i.data.animationCompression, ascending);
+                    items = items.Order(i => i.data.AnimationCompression, ascending);
                     break;
             }
 
@@ -125,22 +125,22 @@ namespace CrazyGames.WindowComponents.ModelOptimizations
             switch (column)
             {
                 case 0:
-                    GUI.Label(cellRect, item.data.modelName);
+                    GUI.Label(cellRect, item.data.ModelName);
                     break;
                 case 1:
-                    GUI.Label(cellRect, item.data.isReadWriteEnabled ? "yes" : "no");
+                    GUI.Label(cellRect, item.data.IsReadWriteEnabled ? "yes" : "no");
                     break;
                 case 2:
-                    GUI.Label(cellRect, item.data.arePolygonsOptimized ? "yes" : "no");
+                    GUI.Label(cellRect, item.data.ArePolygonsOptimized ? "yes" : "no");
                     break;
                 case 3:
-                    GUI.Label(cellRect, item.data.areVerticesOptimized ? "yes" : "no");
+                    GUI.Label(cellRect, item.data.AreVerticesOptimized ? "yes" : "no");
                     break;
                 case 4:
-                    GUI.Label(cellRect, item.data.meshCompression);
+                    GUI.Label(cellRect, item.data.MeshCompressionName);
                     break;
                 case 5:
-                    GUI.Label(cellRect, item.data.animationCompression);
+                    GUI.Label(cellRect, item.data.AnimationCompressionName);
                     break;
             }
         }
@@ -149,7 +149,7 @@ namespace CrazyGames.WindowComponents.ModelOptimizations
         {
             base.SelectionChanged(selectedIds);
             var item = treeModel.Find(selectedIds.First());
-            Selection.activeObject = AssetDatabase.LoadMainAssetAtPath(item.modelPath);
+            Selection.activeObject = AssetDatabase.LoadMainAssetAtPath(item.ModelPath);
         }
     }
 }

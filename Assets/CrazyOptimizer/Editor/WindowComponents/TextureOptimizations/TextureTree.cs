@@ -35,28 +35,28 @@ namespace CrazyGames.WindowComponents.TextureOptimizations
             if (sortedColumns.Length == 0)
                 return;
 
-            var items = rootItem.children.Cast<TreeViewItem<TextureTreeItem>>().OrderBy(i => i.data.textureName);
+            var items = rootItem.children.Cast<TreeViewItem<TextureTreeItem>>().OrderBy(i => i.data.TextureName);
             var sortedColumnIndex = sortedColumns[0];
             var ascending = multiColumnHeader.IsSortedAscending(sortedColumnIndex);
             switch (sortedColumnIndex)
             {
                 case 0:
-                    items = items.Order(i => i.data.textureName, ascending);
+                    items = items.Order(i => i.data.TextureName, ascending);
                     break;
                 case 1:
-                    items = items.Order(i => i.data.textureType, ascending);
+                    items = items.Order(i => i.data.TextureType, ascending);
                     break;
                 case 2:
-                    items = items.Order(i => i.data.textureMaxSize, ascending);
+                    items = items.Order(i => i.data.TextureMaxSize, ascending);
                     break;
                 case 3:
-                    items = items.Order(i => i.data.compression, ascending);
+                    items = items.Order(i => i.data.TextureCompressionName, ascending);
                     break;
                 case 4:
-                    items = items.Order(i => i.data.crunchCompressionQuality, ascending);
+                    items = items.Order(i => i.data.CrunchCompressionQuality, ascending);
                     break;
                 case 5:
-                    items = items.Order(i => i.data.crunchCompressionQuality, ascending);
+                    items = items.Order(i => i.data.CrunchCompressionQuality, ascending);
                     break;
             }
 
@@ -125,22 +125,22 @@ namespace CrazyGames.WindowComponents.TextureOptimizations
             switch (column)
             {
                 case 0:
-                    GUI.Label(cellRect, item.data.textureName);
+                    GUI.Label(cellRect, item.data.TextureName);
                     break;
                 case 1:
-                    GUI.Label(cellRect, item.data.textureType.ToString());
+                    GUI.Label(cellRect, item.data.TextureType.ToString());
                     break;
                 case 2:
-                    GUI.Label(cellRect, item.data.textureMaxSize.ToString());
+                    GUI.Label(cellRect, item.data.TextureMaxSize.ToString());
                     break;
                 case 3:
-                    GUI.Label(cellRect, item.data.compression.ToString());
+                    GUI.Label(cellRect, item.data.TextureCompressionName);
                     break;
                 case 4:
-                    GUI.Label(cellRect, item.data.hasCrunchCompression ? "yes" : "no");
+                    GUI.Label(cellRect, item.data.HasCrunchCompression ? "yes" : "no");
                     break;
                 case 5:
-                    GUI.Label(cellRect, item.data.crunchCompressionQuality.ToString());
+                    GUI.Label(cellRect, item.data.CrunchCompressionQuality.ToString());
                     break;
             }
         }
@@ -149,7 +149,7 @@ namespace CrazyGames.WindowComponents.TextureOptimizations
         {
             base.SelectionChanged(selectedIds);
             var item = treeModel.Find(selectedIds.First());
-            Selection.activeObject = AssetDatabase.LoadMainAssetAtPath(item.texturePath);
+            Selection.activeObject = AssetDatabase.LoadMainAssetAtPath(item.TexturePath);
         }
     }
 }

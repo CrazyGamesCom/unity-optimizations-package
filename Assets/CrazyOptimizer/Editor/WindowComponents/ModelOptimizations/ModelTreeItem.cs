@@ -7,61 +7,44 @@ namespace CrazyGames.WindowComponents.ModelOptimizations
 {
     public class ModelTreeItem : TreeElement
     {
-        public readonly string modelPath;
-        public readonly string modelName;
-        public readonly bool isReadWriteEnabled;
-        public readonly bool arePolygonsOptimized;
-        public readonly bool areVerticesOptimized;
-        public readonly string meshCompression; // Off, Low, Medium, High (values in ModelImporterMeshCompression)
-        public readonly string animationCompression; // Off, KeyframeReduction, KeyframeReductionAndCompression, Optimal (values in ModelImporterAnimationCompression)
+        public string ModelPath { get; }
+        public string ModelName { get; }
+
+        public bool IsReadWriteEnabled => _modelImporter.isReadable;
+        public bool ArePolygonsOptimized => _modelImporter.optimizeMeshPolygons;
+        public bool AreVerticesOptimized => _modelImporter.optimizeMeshVertices;
+        public ModelImporterMeshCompression MeshCompression => _modelImporter.meshCompression;
+        public ModelImporterAnimationCompression AnimationCompression => _modelImporter.animationCompression;
+
+        public string MeshCompressionName => MeshCompression switch
+        {
+            ModelImporterMeshCompression.Off => "Off",
+            ModelImporterMeshCompression.Low => "Low",
+            ModelImporterMeshCompression.Medium => "Medium",
+            ModelImporterMeshCompression.High => "High",
+            _ => throw new ArgumentOutOfRangeException(),
+        };
+
+        public string AnimationCompressionName => AnimationCompression switch
+        {
+            ModelImporterAnimationCompression.Off => "Off",
+            ModelImporterAnimationCompression.KeyframeReduction => "KeyframeReduction",
+            ModelImporterAnimationCompression.KeyframeReductionAndCompression => "KeyframeReductionAndCompression",
+            ModelImporterAnimationCompression.Optimal => "Optimal",
+            _ => throw new ArgumentOutOfRangeException(),
+        };
+
+        private readonly ModelImporter _modelImporter;
 
         public ModelTreeItem(string name, int depth, int id, string modelPath, ModelImporter modelImporter) : base(name, depth, id)
         {
             if (depth == -1)
                 return;
 
-            this.modelPath = modelPath;
-            modelName = Path.GetFileName(modelPath);
+            ModelPath = modelPath;
+            ModelName = Path.GetFileName(modelPath);
 
-            isReadWriteEnabled = modelImporter.isReadable;
-            arePolygonsOptimized = modelImporter.optimizeMeshPolygons;
-            areVerticesOptimized = modelImporter.optimizeMeshVertices;
-
-            switch (modelImporter.meshCompression)
-            {
-                case ModelImporterMeshCompression.Off:
-                    meshCompression = "Off";
-                    break;
-                case ModelImporterMeshCompression.Low:
-                    meshCompression = "Low";
-                    break;
-                case ModelImporterMeshCompression.Medium:
-                    meshCompression = "Medium";
-                    break;
-                case ModelImporterMeshCompression.High:
-                    meshCompression = "High";
-                    break;
-                default:
-                    throw new ArgumentOutOfRangeException();
-            }
-
-            switch (modelImporter.animationCompression)
-            {
-                case ModelImporterAnimationCompression.Off:
-                    animationCompression = "Off";
-                    break;
-                case ModelImporterAnimationCompression.KeyframeReduction:
-                    animationCompression = "KeyframeReduction";
-                    break;
-                case ModelImporterAnimationCompression.KeyframeReductionAndCompression:
-                    animationCompression = "KeyframeReductionAndCompression";
-                    break;
-                case ModelImporterAnimationCompression.Optimal:
-                    animationCompression = "Optimal";
-                    break;
-                default:
-                    throw new ArgumentOutOfRangeException();
-            }
+            _modelImporter = modelImporter;
         }
     }
 }
