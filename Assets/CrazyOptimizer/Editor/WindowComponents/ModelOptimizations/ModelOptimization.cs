@@ -17,6 +17,8 @@ namespace CrazyGames.WindowComponents.ModelOptimizations
         private static bool _isAnalyzing;
         private static bool _includeFilesFromPackages;
 
+        private static readonly List<string> _modelFormats = new List<string>() { ".fbx", ".dae", ".3ds", ".dxf", ".obj" };
+
         public static void RenderGUI()
         {
             var rect = EditorGUILayout.BeginVertical(GUILayout.MinHeight(300));
@@ -104,7 +106,7 @@ namespace CrazyGames.WindowComponents.ModelOptimizations
 
             foreach (var assetDependency in assetDependencies)
             {
-                if (AssetDatabase.GetMainAssetTypeAtPath(assetDependency) == typeof(GameObject))
+                if (IsModelAtPath(assetDependency))
                 {
                     modelDependencies.Add(assetDependency);
                 }
@@ -150,14 +152,21 @@ namespace CrazyGames.WindowComponents.ModelOptimizations
 
                 foreach (var assetDependency in assetDependencies)
                 {
-                    if (AssetDatabase.GetMainAssetTypeAtPath(assetDependency) == typeof(GameObject))
+                    if (IsModelAtPath(assetDependency))
                     {
+                        string ext = System.IO.Path.GetExtension(assetDependency);
                         usedModelPaths.Add(assetDependency);
                     }
                 }
             }
 
             return usedModelPaths.ToList();
+        }
+
+        static bool IsModelAtPath(string assetDependency)
+        {
+            return AssetDatabase.GetMainAssetTypeAtPath(assetDependency) == typeof(GameObject) &&
+                _modelFormats.Contains(System.IO.Path.GetExtension(assetDependency).ToLowerInvariant());
         }
 
         static void AnalyzeModels()
