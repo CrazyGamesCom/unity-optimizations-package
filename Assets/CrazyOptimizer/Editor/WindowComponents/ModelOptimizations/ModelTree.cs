@@ -1,16 +1,16 @@
-﻿using System;
+using CrazyGames.TreeLib;
+using System;
 using System.Collections.Generic;
 using System.Linq;
-using CrazyGames.TreeLib;
 using UnityEditor;
 using UnityEditor.IMGUI.Controls;
 using UnityEngine;
 
-namespace CrazyGames.WindowComponents.TextureOptimizations
+namespace CrazyGames.WindowComponents.ModelOptimizations
 {
-    class TextureTree : TreeViewWithTreeModel<TextureTreeItem>
+    class ModelTree : TreeViewWithTreeModel<ModelTreeItem>
     {
-        public TextureTree(TreeViewState treeViewState, MultiColumnHeader multiColumnHeader, TreeModel<TextureTreeItem> model)
+        public ModelTree(TreeViewState treeViewState, MultiColumnHeader multiColumnHeader, TreeModel<ModelTreeItem> model)
             : base(treeViewState, multiColumnHeader, model)
         {
             showBorder = true;
@@ -29,34 +29,34 @@ namespace CrazyGames.WindowComponents.TextureOptimizations
                 return; // No column to sort for (just use the order the data are in)
             }
 
-
             var sortedColumns = multiColumnHeader.state.sortedColumns;
 
             if (sortedColumns.Length == 0)
                 return;
 
-            var items = rootItem.children.Cast<TreeViewItem<TextureTreeItem>>().OrderBy(i => i.data.TextureName);
+            var items = rootItem.children.Cast<TreeViewItem<ModelTreeItem>>().OrderBy(i => i.data.ModelName);
             var sortedColumnIndex = sortedColumns[0];
             var ascending = multiColumnHeader.IsSortedAscending(sortedColumnIndex);
+
             switch (sortedColumnIndex)
             {
                 case 0:
-                    items = items.Order(i => i.data.TextureName, ascending);
+                    items = items.Order(i => i.data.ModelName, ascending);
                     break;
                 case 1:
-                    items = items.Order(i => i.data.TextureType, ascending);
+                    items = items.Order(i => i.data.IsReadWriteEnabled, ascending);
                     break;
                 case 2:
-                    items = items.Order(i => i.data.TextureMaxSize, ascending);
+                    items = items.Order(i => i.data.ArePolygonsOptimized, ascending);
                     break;
                 case 3:
-                    items = items.Order(i => i.data.TextureCompressionName, ascending);
+                    items = items.Order(i => i.data.AreVerticesOptimized, ascending);
                     break;
                 case 4:
-                    items = items.Order(i => i.data.CrunchCompressionQuality, ascending);
+                    items = items.Order(i => i.data.MeshCompression, ascending);
                     break;
                 case 5:
-                    items = items.Order(i => i.data.CrunchCompressionQuality, ascending);
+                    items = items.Order(i => i.data.AnimationCompression, ascending);
                     break;
             }
 
@@ -78,6 +78,7 @@ namespace CrazyGames.WindowComponents.TextureOptimizations
                 return;
 
             Stack<TreeViewItem> stack = new Stack<TreeViewItem>();
+
             for (int i = root.children.Count - 1; i >= 0; i--)
                 stack.Push(root.children[i]);
 
@@ -96,7 +97,6 @@ namespace CrazyGames.WindowComponents.TextureOptimizations
             }
         }
 
-
         void OnSortingChanged(MultiColumnHeader multiColumnHeader)
         {
             SortIfNeeded(rootItem, GetRows());
@@ -111,7 +111,7 @@ namespace CrazyGames.WindowComponents.TextureOptimizations
 
         protected override void RowGUI(RowGUIArgs args)
         {
-            var item = (TreeViewItem<TextureTreeItem>) args.item;
+            var item = (TreeViewItem<ModelTreeItem>)args.item;
 
             for (int i = 0; i < args.GetNumVisibleColumns(); ++i)
             {
@@ -119,28 +119,28 @@ namespace CrazyGames.WindowComponents.TextureOptimizations
             }
         }
 
-        private void CellGUI(Rect cellRect, TreeViewItem<TextureTreeItem> item, int column, ref RowGUIArgs args)
+        private void CellGUI(Rect cellRect, TreeViewItem<ModelTreeItem> item, int column, ref RowGUIArgs args)
         {
             CenterRectUsingSingleLineHeight(ref cellRect);
             switch (column)
             {
                 case 0:
-                    GUI.Label(cellRect, item.data.TextureName);
+                    GUI.Label(cellRect, item.data.ModelName);
                     break;
                 case 1:
-                    GUI.Label(cellRect, item.data.TextureType.ToString());
+                    GUI.Label(cellRect, item.data.IsReadWriteEnabled ? "yes" : "no");
                     break;
                 case 2:
-                    GUI.Label(cellRect, item.data.TextureMaxSize.ToString());
+                    GUI.Label(cellRect, item.data.ArePolygonsOptimized ? "yes" : "no");
                     break;
                 case 3:
-                    GUI.Label(cellRect, item.data.TextureCompressionName);
+                    GUI.Label(cellRect, item.data.AreVerticesOptimized ? "yes" : "no");
                     break;
                 case 4:
-                    GUI.Label(cellRect, item.data.HasCrunchCompression ? "yes" : "no");
+                    GUI.Label(cellRect, item.data.MeshCompressionName);
                     break;
                 case 5:
-                    GUI.Label(cellRect, item.data.CrunchCompressionQuality.ToString());
+                    GUI.Label(cellRect, item.data.AnimationCompressionName);
                     break;
             }
         }
@@ -149,7 +149,7 @@ namespace CrazyGames.WindowComponents.TextureOptimizations
         {
             base.SelectionChanged(selectedIds);
             var item = treeModel.Find(selectedIds.First());
-            Selection.activeObject = AssetDatabase.LoadMainAssetAtPath(item.TexturePath);
+            Selection.activeObject = AssetDatabase.LoadMainAssetAtPath(item.ModelPath);
         }
     }
 }
