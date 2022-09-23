@@ -16,23 +16,45 @@ namespace CrazyGames.WindowComponents.ModelOptimizations
         public ModelImporterMeshCompression MeshCompression => _modelImporter.meshCompression;
         public ModelImporterAnimationCompression AnimationCompression => _modelImporter.animationCompression;
 
-        public string MeshCompressionName => MeshCompression switch
+        public string MeshCompressionName
         {
-            ModelImporterMeshCompression.Off => "Off",
-            ModelImporterMeshCompression.Low => "Low",
-            ModelImporterMeshCompression.Medium => "Medium",
-            ModelImporterMeshCompression.High => "High",
-            _ => throw new ArgumentOutOfRangeException(),
-        };
+            get
+            {
+                switch (MeshCompression)
+                {
+                    case ModelImporterMeshCompression.Off:
+                        return "Off";
+                    case ModelImporterMeshCompression.Low:
+                        return "Low";
+                    case ModelImporterMeshCompression.Medium:
+                        return "Medium";
+                    case ModelImporterMeshCompression.High:
+                        return "High";
+                    default:
+                        throw new ArgumentOutOfRangeException();
+                }
+            }
+        }
 
-        public string AnimationCompressionName => AnimationCompression switch
+        public string AnimationCompressionName
         {
-            ModelImporterAnimationCompression.Off => "Off",
-            ModelImporterAnimationCompression.KeyframeReduction => "KeyframeReduction",
-            ModelImporterAnimationCompression.KeyframeReductionAndCompression => "KeyframeReductionAndCompression",
-            ModelImporterAnimationCompression.Optimal => "Optimal",
-            _ => throw new ArgumentOutOfRangeException(),
-        };
+            get
+            {
+                switch (AnimationCompression)
+                {
+                    case ModelImporterAnimationCompression.Off:
+                        return "Off";
+                    case ModelImporterAnimationCompression.KeyframeReduction:
+                        return "KeyframeReduction";
+                    case ModelImporterAnimationCompression.KeyframeReductionAndCompression:
+                        return "KeyframeReductionAndCompression";
+                    case ModelImporterAnimationCompression.Optimal:
+                        return "Optimal";
+                    default:
+                        throw new ArgumentOutOfRangeException();
+                }
+            }
+        }
 
         private readonly ModelImporter _modelImporter;
 

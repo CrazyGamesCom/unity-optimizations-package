@@ -7,7 +7,7 @@ namespace CrazyGames.WindowComponents.TextureOptimizations
 {
     public class TextureTreeItem : TreeElement
     {
-        public string TexturePath{ get; }
+        public string TexturePath { get; }
         public string TextureName { get; }
 
         public int TextureMaxSize => _platformSettings.maxTextureSize;
@@ -17,14 +17,25 @@ namespace CrazyGames.WindowComponents.TextureOptimizations
         public TextureImporterType TextureType => _textureImporter.textureType;
         public TextureImporterCompression TextureCompression => _textureImporter.textureCompression;
 
-        public string TextureCompressionName => TextureCompression switch
+        public string TextureCompressionName
         {
-            TextureImporterCompression.Uncompressed => "Uncompressed",
-            TextureImporterCompression.Compressed => "Normal",
-            TextureImporterCompression.CompressedHQ => "High",
-            TextureImporterCompression.CompressedLQ => "Low",
-            _ => throw new ArgumentOutOfRangeException(),
-        };
+            get
+            {
+                switch (TextureCompression)
+                {
+                    case TextureImporterCompression.Uncompressed:
+                        return "Uncompressed";
+                    case TextureImporterCompression.Compressed:
+                        return "Normal";
+                    case TextureImporterCompression.CompressedHQ:
+                        return "High";
+                    case TextureImporterCompression.CompressedLQ:
+                        return "Low";
+                    default:
+                        throw new ArgumentOutOfRangeException();
+                }
+            }
+        }
 
         private readonly TextureImporter _textureImporter;
         private readonly TextureImporterPlatformSettings _platformSettings;
