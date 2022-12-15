@@ -3,7 +3,7 @@ using UnityEngine.UIElements;
 
 namespace AssetStoreTools.Validator
 {
-    public class ValidationInfoElement : VisualElement
+    internal class ValidationInfoElement : VisualElement
     {
         private const string GuidelinesUrl = "https://assetstore.unity.com/publishing/submission-guidelines#Overview";
         private const string SupportUrl = "https://support.unity.com/hc/en-us/requests/new?ticket_form_id=65905";

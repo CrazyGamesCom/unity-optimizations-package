@@ -4,7 +4,10 @@ using System.Net.Http;
 
 namespace AssetStoreTools.Uploader
 {
-    public class ASError
+    /// <summary>
+    /// A structure for retrieving and converting errors from Asset Store Tools class methods
+    /// </summary>
+    internal class ASError
     {
         public string Message { get; private set; }
         public Exception Exception { get; private set; }

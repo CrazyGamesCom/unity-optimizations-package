@@ -1,6 +1,6 @@
 ﻿namespace AssetStoreTools.Uploader
 {
-    public class PackageData
+    internal class PackageData
     {
         public string Id { get; }
         public string Name { get; }

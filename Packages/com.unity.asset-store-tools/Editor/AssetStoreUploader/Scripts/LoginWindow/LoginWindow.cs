@@ -6,7 +6,7 @@ using UnityEngine.UIElements;
 
 namespace AssetStoreTools.Uploader
 {
-    public class LoginWindow : VisualElement
+    internal class LoginWindow : VisualElement
     {
         private readonly string REGISTER_URL = "https://publisher.unity.com/access";
         private readonly string FORGOT_PASSWORD_URL = "https://id.unity.com/password/new";

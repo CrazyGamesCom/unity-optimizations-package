@@ -4,6 +4,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using System.IO;
+using System.Text.RegularExpressions;
+using AssetStoreTools.Utility;
 using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEngine;
@@ -11,7 +13,7 @@ using UnityEngine.UIElements;
 
 namespace AssetStoreTools.Uploader
 {
-    public class PackageView : VisualElement
+    internal class PackageView : VisualElement
     {
         public string PackageId => _packageData.Id;
         public string VersionId => _packageData.VersionId;
@@ -30,7 +32,6 @@ namespace AssetStoreTools.Uploader
         // Unexpanded state dynamic elements
         private Button _foldoutBox;
         private Label _expanderLabel;
-        private ProgressBar _uploadProgressBarHeader;
         private Label _assetLabel;
         private Label _lastDateSizeLabel;
         private Button _openInBrowserButton;
@@ -39,13 +40,16 @@ namespace AssetStoreTools.Uploader
         private VisualElement _functionsBox;
         
         private Button _uploadButton;
-        private ProgressBar _uploadProgressBar;
-        
+        private ProgressBar _uploadProgressBarFlow;
+        private ProgressBar _uploadProgressBarHeader;
+
+        private VisualElement _uploadProgressFlowBg;
+        private VisualElement _uploadProgressHeaderBg;
+
         private bool _expanded;
         public Action<PackageView> OnPackageSelection;
         
         private VisualElement _workflowSelectionBox;
-
         private UploadWorkflowView _activeWorkflowElement;
         private Dictionary<string, UploadWorkflowView> _uploadWorkflows;
 
@@ -69,9 +73,14 @@ namespace AssetStoreTools.Uploader
 
             if (_uploadWorkflows != null && _uploadWorkflows.ContainsKey(FolderUploadWorkflowView.WorkflowName))
                 ((FolderUploadWorkflowView) _uploadWorkflows[FolderUploadWorkflowView.WorkflowName]).SetCompleteProject(packageData.IsCompleteProject);
+
+            if (Status == "draft")
+                return;
+            
+            ResetPostUpload();
+            SetupExpander();
         }
-
-
+        
         public void ShowFunctions(bool show)
         {
             if (_functionsBox == null)
@@ -138,13 +147,13 @@ namespace AssetStoreTools.Uploader
                 name = "OpenInBrowserButton",
                 tooltip = "View your package in the Publishing Portal."
             };
-
             _openInBrowserButton.AddToClassList("open-in-browser-button");
 
             // Header Progress bar
             _uploadProgressBarHeader = new ProgressBar { name = "HeaderProgressBar" };
             _uploadProgressBarHeader.AddToClassList("header-progress-bar");
             _uploadProgressBarHeader.style.display = DisplayStyle.None;
+            _uploadProgressHeaderBg = _uploadProgressBarHeader.Q<VisualElement>(className:"unity-progress-bar__progress");
 
             // Connect it all
             foldoutBoxInfo.Add(labelExpanderRow);
@@ -154,20 +163,44 @@ namespace AssetStoreTools.Uploader
             _foldoutBox.Add(_uploadProgressBarHeader);
 
             Add(_foldoutBox);
+            SetupExpander();
+        }
 
-            if (Status != "draft")
-                _expanderLabel.style.display = DisplayStyle.None;
-
-            _foldoutBox.clicked += () =>
+        private void SetupExpander()
+        {
+            if (_foldoutBox != null)
             {
-                OnPackageSelection?.Invoke(this);
-                ShowFunctions(!_expanded);
-            };
+                _foldoutBox.clickable = null;
 
-            _openInBrowserButton.clicked += () =>
+                // If not draft - hide expander, open a listing page on click
+                if (Status != "draft")
+                {
+                    _expanderLabel.style.display = DisplayStyle.None;
+                    _foldoutBox.clicked += () =>
+                    {
+                        Application.OpenURL($"https://publisher.unity.com/packages/{VersionId}/edit/upload");
+                    };
+                }
+                else
+                {
+                    // Else open functions box
+                    _foldoutBox.clicked += () =>
+                    {
+                        OnPackageSelection?.Invoke(this);
+                        ShowFunctions(!_expanded);
+                    };
+                }
+            }
+
+            if (_openInBrowserButton != null)
             {
-                Application.OpenURL($"https://publisher.unity.com/packages/{VersionId}/edit/upload");
-            };
+                _openInBrowserButton.clickable = null;
+
+                _openInBrowserButton.clicked += () =>
+                {
+                    Application.OpenURL($"https://publisher.unity.com/packages/{VersionId}/edit/upload");
+                };
+            }
         }
 
         private void SetupFunctionsElement()
@@ -190,9 +223,9 @@ namespace AssetStoreTools.Uploader
             VisualElement uploadBox = new VisualElement { name = "UploadBox" };
             uploadBox.AddToClassList("upload-box");
 
-            var folderUploadWorkflow = FolderUploadWorkflowView.Create(IsCompleteProject, SerializeWorkflowSelections);
+            var folderUploadWorkflow = FolderUploadWorkflowView.Create(Category, IsCompleteProject, SerializeWorkflowSelections);
             var unitypackageUploadWorkflow = UnityPackageUploadWorkflowView.Create(SerializeWorkflowSelections);
-            var hybridPackageUploadWorkflow = HybridPackageUploadWorkflowView.Create(SerializeWorkflowSelections);
+            var hybridPackageUploadWorkflow = HybridPackageUploadWorkflowView.Create(Category, SerializeWorkflowSelections);
 
             // Workflow selection
             _workflowSelectionBox = new VisualElement();
@@ -308,10 +341,11 @@ namespace AssetStoreTools.Uploader
             _uploadButton = new Button (PreparePackageUpload) { name = "UploadButton", text = "Upload"};
             _uploadButton.AddToClassList("upload-button");
 
-            _uploadProgressBar = new ProgressBar { name = "UploadProgressBar" };
-            _uploadProgressBar.AddToClassList("upload-progress-bar");
+            _uploadProgressBarFlow = new ProgressBar { name = "UploadProgressBar" };
+            _uploadProgressBarFlow.AddToClassList("upload-progress-bar");
+            _uploadProgressFlowBg = _uploadProgressBarFlow.Q<VisualElement>(className: "unity-progress-bar__progress");
             
-            progressUploadBox.Add(_uploadProgressBar);
+            progressUploadBox.Add(_uploadProgressBarFlow);
             progressUploadBox.Add(_uploadButton);
 
             return progressUploadBox;
@@ -375,7 +409,8 @@ namespace AssetStoreTools.Uploader
             if (!ValidateUnityVersionsForUpload())
                 return;
 
-            var exportResult = await _activeWorkflowElement.ExportPackage(IsCompleteProject);
+            var packageNameStripped = Regex.Replace(PackageName, "[^a-zA-Z0-9]", "");
+            var exportResult = await _activeWorkflowElement.ExportPackage(packageNameStripped, IsCompleteProject);
             if (!exportResult.Success)
             {
                 Debug.LogError(exportResult.Error);
@@ -395,7 +430,7 @@ namespace AssetStoreTools.Uploader
             EnableWorkflowElements(false);
 
             // Progress bar
-            _uploadProgressBar.style.display = DisplayStyle.Flex;
+            _uploadProgressBarFlow.style.display = DisplayStyle.Flex;
             
             // Configure the upload cancel button
             _uploadButton.clickable = null;
@@ -436,10 +471,17 @@ namespace AssetStoreTools.Uploader
                     analyticsData.UploadFinishedReason = result.Error.Exception.ToString();
                     OnPackageUploadFail(result.Error);
                     break;
+                case PackageUploadResult.UploadStatus.ResponseTimeout:
+                    analyticsData.UploadFinishedReason = "ResponseTimeout";
+                    Debug.LogWarning($"All bytes for the package '{PackageName}' have been uploaded, but a response " +
+                        $"from the server was not received. This can happen because of Firewall restrictions. " +
+                        $"Please make sure that a new version of your package has reached the Publishing Portal.");
+                    await OnPackageUploadSuccess();
+                    break;
             }
             
             ASAnalytics.SendUploadingEvent(analyticsData);
-            PostUploadCleanup();
+            PostUploadCleanup(result.Status);
         }
 
         private ASAnalytics.AnalyticsData ConstructAnalyticsData(string exportedPackagePath)
@@ -460,25 +502,27 @@ namespace AssetStoreTools.Uploader
             ASAnalytics.AnalyticsData data = new ASAnalytics.AnalyticsData
             {
                 ToolVersion = AssetStoreAPI.ToolVersion,
+                EndpointUrl = AssetStoreAPI.AssetStoreProdUrl,
                 PackageId = PackageId,
                 Category = Category,
                 UsedValidator = validated,
                 ValidatorResults = validationResults,
-                PackageSize = (int) packageFileInfo.Length,
+                PackageSize = packageFileInfo.Length,
                 Workflow = workflow
             };
 
             return data;
         }
         
-
         private void OnPackageUploadProgressHeader()
         {
+            // Header progress bar is only shown when the package is not expanded and has progress
+            if (_uploadProgressBarHeader.value > 0.0f)
+                _uploadProgressBarHeader.style.display = !_expanded ? DisplayStyle.Flex : DisplayStyle.None;
+            
             if (!AssetStoreAPI.ActiveUploads.ContainsKey(VersionId))
                 return;
-
-            // Header progress bar is only shown when the package is not expanded
-            _uploadProgressBarHeader.style.display = !_expanded ? DisplayStyle.Flex : DisplayStyle.None;
+            
             _uploadProgressBarHeader.value = AssetStoreAPI.ActiveUploads[VersionId].Progress;
         }
 
@@ -488,13 +532,18 @@ namespace AssetStoreTools.Uploader
                 return;
 
             var progressValue = AssetStoreAPI.ActiveUploads[VersionId].Progress;
-            _uploadProgressBar.value = progressValue;
-            _uploadProgressBar.title = $"{progressValue:0.#}%";
+            _uploadProgressBarFlow.value = progressValue;
+            _uploadProgressBarFlow.title = $"{progressValue:0.#}%";
+            
+            if(progressValue == 100f && _uploadButton.enabledInHierarchy)
+                _uploadButton.SetEnabled(false);
         }
 
         private async Task OnPackageUploadSuccess()
         {
-            EditorUtility.DisplayDialog("Success!", $"Package for '{PackageName}' has been uploaded successfully!", "OK");
+            if (ASToolsPreferences.Instance.DisplayUploadDialog)
+                EditorUtility.DisplayDialog("Success!", $"Package for '{PackageName}' has been uploaded successfully!", "OK");
+            
             SetEnabled(false);
             PackageFetcher fetcher = new PackageFetcher();
             var result = await fetcher.FetchRefreshedPackage(PackageId);
@@ -512,44 +561,78 @@ namespace AssetStoreTools.Uploader
 
         private void OnPackageUploadFail(ASError error)
         {
-            EditorUtility.DisplayDialog("Upload failed", "Package uploading failed. See Console for details", "OK");
+            if (ASToolsPreferences.Instance.DisplayUploadDialog)
+                EditorUtility.DisplayDialog("Upload failed", "Package uploading failed. See Console for details", "OK");
+            
             Debug.LogError(error);
         }
 
-        private void PostUploadCleanup()
+        private void PostUploadCleanup(PackageUploadResult.UploadStatus uploadStatus)
         {
-            EnableWorkflowElements(true);
-            
-            // Cleanup the progress bars
-            EditorApplication.update -= OnPackageUploadProgressHeader;
-            EditorApplication.update -= OnPackageUploadProgressContent;
+            if (_activeWorkflowElement == null)
+                return;
 
+            SetProgressBarColorByStatus(uploadStatus);
+            
+            _uploadProgressBarFlow.title = $"Upload: {uploadStatus.ToString()}";
+            
+            _uploadButton.clickable = null;
+            _uploadButton.clicked += ResetPostUpload;
+            
+            _uploadButton.text = "Done";
+
+            // Re-enable the Upload/Cancel/Done button since it gets disabled at 100% progress
+            _uploadButton.SetEnabled(true);
+        }
+
+        private void ResetPostUpload()
+        {
+            if (_activeWorkflowElement == null)
+                return;
+
+            // Cleanup the progress bars
+            EditorApplication.update -= OnPackageUploadProgressContent;
+            EditorApplication.update -= OnPackageUploadProgressHeader;
+            
+            EnableWorkflowElements(true);
             ResetProgressBar();
             ResetUploadButton();
         }
 
         private void ResetProgressBar()
         {
+            SetProgressBarColorByStatus(PackageUploadResult.UploadStatus.Default);
+            
             _uploadProgressBarHeader.style.display = DisplayStyle.None;
             _uploadProgressBarHeader.value = 0f;
 
-            _uploadProgressBar.style.display = DisplayStyle.None;
-            _uploadProgressBar.value = 0f;
-            _uploadProgressBar.title = string.Empty;
+            _uploadProgressBarFlow.style.display = DisplayStyle.None;
+            _uploadProgressBarFlow.value = 0f;
+            _uploadProgressBarFlow.title = string.Empty;
         }
 
         private void ResetUploadButton()
         {
             _uploadButton.clickable = null;
             _uploadButton.clicked += PreparePackageUpload;
+            
             _uploadButton.style.flexGrow = 1;
             _uploadButton.text = "Upload";
+            _uploadButton.SetEnabled(true);
         }
 
         private void EnableWorkflowElements(bool enable)
         {
-            _workflowSelectionBox.SetEnabled(enable);
-            _activeWorkflowElement.SetEnabled(enable);
+            _workflowSelectionBox?.SetEnabled(enable);
+            _activeWorkflowElement?.SetEnabled(enable);
+        }
+        
+        private void SetProgressBarColorByStatus(PackageUploadResult.UploadStatus status)
+        {
+            var color = PackageUploadResult.GetColorByStatus(status);
+
+            _uploadProgressFlowBg.style.backgroundColor = color;
+            _uploadProgressHeaderBg.style.backgroundColor = color;
         }
 
 #endregion

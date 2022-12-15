@@ -1,4 +1,5 @@
 ﻿using AssetStoreTools.Utility.Json;
+using AssetStoreTools.Utility;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -9,7 +10,7 @@ using UnityEngine.UIElements;
 
 namespace AssetStoreTools.Uploader
 {
-    public class HybridPackageUploadWorkflowView : UploadWorkflowView
+    internal class HybridPackageUploadWorkflowView : UploadWorkflowView
     {
         public const string WorkflowName = "HybridPackageWorkflow";
         public const string WorkflowDisplayName = "Local UPM Package";
@@ -17,17 +18,21 @@ namespace AssetStoreTools.Uploader
         public override string Name => WorkflowName;
         public override string DisplayName => WorkflowDisplayName;
 
+        private string _category;
+
         private ValidationElement _validationElement;
         private VisualElement _extraPackagesElement;
 
-        private HybridPackageUploadWorkflowView(Action serializeSelection) : base(serializeSelection)
+        private HybridPackageUploadWorkflowView(string category, Action serializeSelection) : base(serializeSelection)
         {
+            _category = category;
+            
             SetupWorkflow();
         }
 
-        public static HybridPackageUploadWorkflowView Create(Action serializeAction)
+        public static HybridPackageUploadWorkflowView Create(string category, Action serializeAction)
         {
-            return new HybridPackageUploadWorkflowView(serializeAction);
+            return new HybridPackageUploadWorkflowView(category, serializeAction);
         }
 
         protected sealed override void SetupWorkflow()
@@ -63,6 +68,8 @@ namespace AssetStoreTools.Uploader
 
             _validationElement = new ValidationElement();
             Add(_validationElement);
+            
+            _validationElement.SetCategory(_category);
         }
 
         public override void LoadSerializedWorkflow(JsonValue json, string lastUploadedPath, string lastUploadedGuid)
@@ -163,25 +170,25 @@ namespace AssetStoreTools.Uploader
             }
 
             List<string> pathsToAdd = new List<string>();
-            foreach (var package in PackageExporter.GetAllLocalPackages())
+            foreach (var package in PackageUtility.GetAllLocalPackages())
             {
                 // Exclude the Asset Store Tools themselves
-                if (package.Get("name") == "com.unity.asset-store-tools")
+                if (package.name == "com.unity.asset-store-tools")
                     continue;
 
-                var localPackagePath = package.Get("path_absolute");
+                var localPackagePath = package.GetConvenientPath();
 
                 if (localPackagePath == relativeExportPath)
                     continue;
 
-                pathsToAdd.Add(package.Get("path_assetdb"));
+                pathsToAdd.Add(package.assetPath);
             }
 
             if (pathsToAdd.Count != 0)
                 PopulateExtraPathsBox(pathsToAdd, serializedToggles);
 
             if (serializeValues)
-                _serializeSelection?.Invoke();
+                SerializeSelection?.Invoke();
         }
 
         private void PopulateExtraPathsBox(List<string> otherPackagesFound, List<string> checkedToggles)
@@ -240,7 +247,7 @@ namespace AssetStoreTools.Uploader
                     break;
             }
 
-            _serializeSelection?.Invoke();
+            SerializeSelection?.Invoke();
         }
 
         private bool IsValidLocalPackage(string packageFolderPath, out string assetDatabasePackagePath)
@@ -253,19 +260,19 @@ namespace AssetStoreTools.Uploader
                 return false;
             try
             {
-                var localPackages = PackageExporter.GetAllLocalPackages();
+                var localPackages = PackageUtility.GetAllLocalPackages();
 
-                if (localPackages == null || localPackages.Count == 0)
+                if (localPackages == null || localPackages.Length == 0)
                     return false;
 
                 foreach (var package in localPackages)
                 {
-                    var localPackagePath = package.Get("path_absolute").AsString();
+                    var localPackagePath = package.GetConvenientPath();
 
                     if (localPackagePath != packageFolderPath)
                         continue;
 
-                    assetDatabasePackagePath = package.Get("path_assetdb").AsString();
+                    assetDatabasePackagePath = package.assetPath;
                     return true;
                 }
             }
@@ -277,11 +284,11 @@ namespace AssetStoreTools.Uploader
             return false;
         }
 
-        public override async Task<PackageExporter.ExportResult> ExportPackage(bool _)
+        public override async Task<PackageExporter.ExportResult> ExportPackage(string packageName, bool _)
         {
             var paths = GetAllExportPaths();
-            var outputPath = $"{FileUtil.GetUniqueTempPathInProject()}-{Name}.unitypackage";
-            return await PackageExporter.ExportPackage(paths, outputPath, false, false, true);
+            var outputPath = $"Temp/{packageName}-{DateTime.Now:yyyy-dd-M--HH-mm-ss}.unitypackage";
+            return await PackageExporter.ExportPackage(paths, outputPath, false, false, false);
         }
     }
 }

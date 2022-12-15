@@ -6,7 +6,7 @@ using UnityEngine.UIElements;
 
 namespace AssetStoreTools.Validator
 {
-    public class AssetStoreValidation : AssetStoreToolsWindow
+    internal class AssetStoreValidation : AssetStoreToolsWindow
     {
         protected override string WindowTitle => "Asset Store Validator";
         

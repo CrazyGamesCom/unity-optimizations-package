@@ -20,3 +20,17 @@ MonoBehaviour:
     If your asset is based on scripting or Editor extensions, please consider adding
     a demo scene showcasing the asset or showing setup steps in the scene.
   TestMethodName: _1_IncludeDemoScene
+  ErrorCategory:
+    Filter:
+    - 3D
+    - 2D
+    - VFX
+    - Animation
+    - Essentials
+    - Templates
+    FilterIsInclusive: 1
+    AppliesToSubCategories: 1
+  WarningCategory:
+    Filter: []
+    FilterIsInclusive: 0
+    AppliesToSubCategories: 1

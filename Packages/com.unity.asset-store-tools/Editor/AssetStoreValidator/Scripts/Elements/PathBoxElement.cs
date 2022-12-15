@@ -1,14 +1,12 @@
-using System.Collections.Generic;
 using System.IO;
 using AssetStoreTools.Utility;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
-using AssetStoreTools.Utility.Json;
 
 namespace AssetStoreTools.Validator
 {
-    public class PathBoxElement : VisualElement
+    internal class PathBoxElement : VisualElement
     {
         private const string PackagesLockPath = "Packages/packages-lock.json";
 
@@ -35,16 +33,38 @@ namespace AssetStoreTools.Validator
         {
             AddToClassList("path-box");
             
-            _folderPathField = new TextField
+            var pathSelectionBox = new VisualElement();
+            pathSelectionBox.AddToClassList("selection-box-row");
+            
+            VisualElement labelHelpRow = new VisualElement();
+            labelHelpRow.AddToClassList("label-help-row");
+            
+            Label pathLabel = new Label { text = "Folder path" };
+            Image pathLabelTooltip = new Image
             {
-                label = "Assets path",
-                isReadOnly = true
+                tooltip = "Select the main folder of your package" +
+                          "\n\nAll files and folders of your package should preferably be contained within a single root folder that is named after your package" +
+                          "\n\nExample: 'Assets/[MyPackageName]' or 'Packages/[MyPackageName]'"
             };
             
-            _browseButton = new Button (Browse) {text = "Browse"};
+            labelHelpRow.Add(pathLabel);
+            labelHelpRow.Add(pathLabelTooltip);
             
-            Add(_folderPathField);
-            Add(_browseButton);
+            _folderPathField = new TextField
+            {
+                label = "",
+                isReadOnly = true
+            };
+            _folderPathField.AddToClassList("path-input-field");
+            
+            _browseButton = new Button (Browse) {text = "Browse"};
+            _browseButton.AddToClassList("browse-button");
+
+            pathSelectionBox.Add(labelHelpRow);
+            pathSelectionBox.Add(_folderPathField);
+            pathSelectionBox.Add(_browseButton);
+
+            Add(pathSelectionBox);
         }
 
         private void Browse()
@@ -65,25 +85,22 @@ namespace AssetStoreTools.Validator
         private bool ValidateFolderPath(ref string resultPath)
         {
             var folderPath = resultPath;
-            var pathWithinProject = Application.dataPath.Replace("Assets", "");
+            var pathWithinProject = Application.dataPath.Substring(0, Application.dataPath.Length - "Assets".Length);
 
             // Selected path is within the project
-            if (folderPath.Contains(pathWithinProject))
+            if (folderPath.StartsWith(pathWithinProject))
             {
-                var localPath = folderPath.Replace(pathWithinProject, "");
+                var localPath = folderPath.Substring(pathWithinProject.Length);
 
-                if (localPath.StartsWith("Packages"))
-                {
-                    if (IsValidLocalPackage(localPath, out var adbPath))
-                    {
-                        resultPath = adbPath;
-                        return true;
-                    }
-                }
-
-                if (localPath.StartsWith("Assets"))
+                if (localPath.StartsWith("Assets/") || localPath == "Assets")
                 {
                     resultPath = localPath;
+                    return true;
+                }
+
+                if (IsValidLocalPackage(localPath, out var adbPath))
+                {
+                    resultPath = adbPath;
                     return true;
                 }
 
@@ -120,19 +137,19 @@ namespace AssetStoreTools.Validator
                 return false;
             try
             {
-                var localPackages = GetAllLocalPackages();
+                var localPackages = PackageUtility.GetAllLocalPackages();
 
-                if (localPackages == null || localPackages.Count == 0)
+                if (localPackages == null || localPackages.Length == 0)
                     return false;
 
                 foreach (var package in localPackages)
                 {
-                    var localPackagePath = package.Get("path_absolute").AsString();
-                    
+                    var localPackagePath = package.GetConvenientPath();
+
                     if (localPackagePath != packageFolderPath) 
                         continue;
-                    
-                    assetDatabasePackagePath = package.Get("path_assetdb").AsString();
+
+                    assetDatabasePackagePath = package.assetPath;
                     return true;
                 }
             }
@@ -142,50 +159,6 @@ namespace AssetStoreTools.Validator
             }
 
             return false;
-        }
-
-        private List<JsonValue> GetAllLocalPackages()
-        {
-            try
-            {
-                string packageLockJsonString = File.ReadAllText(PackagesLockPath);
-                JSONParser parser = new JSONParser(packageLockJsonString);
-                var packageLockJson = parser.Parse();
-
-                var packages = packageLockJson.Get("dependencies").AsDict();
-                var localPackages = new List<JsonValue>();
-
-                foreach (var kvp in packages)
-                {
-                    var packageSource = kvp.Value.Get("source").AsString();
-                    
-                    if (!packageSource.Equals("embedded") && !packageSource.Equals("local")) 
-                        continue;
-                    
-                    var packagePath = kvp.Value.Get("version").AsString().Substring("file:".Length);
-                        
-                    if (packageSource.Equals("embedded"))
-                        packagePath = $"Packages/{packagePath}";
-                    else if (packageSource.Equals("local") && packagePath.StartsWith("../"))
-                        packagePath = packagePath.Substring("../".Length);
-                        
-                    JsonValue localPackage = new JsonValue
-                    {
-                        ["name"] = JsonValue.NewString(kvp.Key),
-                        ["source"] = JsonValue.NewString(kvp.Value.Get("source")),
-                        ["path_absolute"] = JsonValue.NewString(packagePath),
-                        ["path_assetdb"] = JsonValue.NewString($"Packages/{kvp.Key}")
-                    };
-                        
-                    localPackages.Add(localPackage);
-                }
-
-                return localPackages;
-            }
-            catch
-            {
-                return null;
-            }
         }
 
         private void DisplayMessage(string title, string message)

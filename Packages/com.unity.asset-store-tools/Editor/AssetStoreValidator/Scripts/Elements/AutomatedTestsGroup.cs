@@ -1,10 +1,14 @@
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using UnityEditor;
+using UnityEditor.UIElements;
+using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace AssetStoreTools.Validator
 {
-    public class AutomatedTestsGroup : VisualElement
+    internal class AutomatedTestsGroup : VisualElement
     {
         private const string TestsPath = "Packages/com.unity.asset-store-tools/Editor/AssetStoreValidator/Tests";
         
@@ -13,11 +17,13 @@ namespace AssetStoreTools.Validator
             new Dictionary<TestResult.ResultStatus, AutomatedTestsGroupElement>();
 
         private List<AutomatedTest> _automatedTests = new List<AutomatedTest>();
-        
+        private CategoryEvaluator _categoryEvaluator;
+
         private ScrollView _allTestsScrollView;
         private ValidationInfoElement _validationInfoBox;
         private PathBoxElement _pathBox;
         private Button _validateButton;
+        private ToolbarMenu _categoryMenu;
 
         private static readonly TestResult.ResultStatus[] StatusOrder = {TestResult.ResultStatus.Undefined, 
             TestResult.ResultStatus.Fail, TestResult.ResultStatus.Warning, TestResult.ResultStatus.Pass};
@@ -34,11 +40,23 @@ namespace AssetStoreTools.Validator
         private void Reinitialize()
         {
             this.Clear();
+            
             _testElements.Clear();
             _testGroupElements.Clear();
             _automatedTests.Clear();
-
+            
             ConstructInfoPart();
+            ConstructAutomatedTests();
+        }
+        
+        private void RepopulateTests()
+        {
+            this.Remove(_allTestsScrollView);
+            
+            _testElements.Clear();
+            _testGroupElements.Clear();
+            _automatedTests.Clear();
+            
             ConstructAutomatedTests();
         }
 
@@ -49,13 +67,39 @@ namespace AssetStoreTools.Validator
 
             var mainPath = ValidationState.Instance.ValidationStateData.SerializedMainPath;
             _pathBox.SetPathBoxValue(string.IsNullOrEmpty(mainPath) ? "Assets" : mainPath);
+            
+            var categorySelectionBox = new VisualElement();
+            categorySelectionBox.AddToClassList("selection-box-row");
+            
+            VisualElement labelHelpRow = new VisualElement();
+            labelHelpRow.AddToClassList("label-help-row");
+            
+            Label categoryLabel = new Label { text = "Category" };
+            Image categoryLabelTooltip = new Image
+            {
+                tooltip = "Choose a base category of your package" +
+                          "\n\nThis can be found in the Publishing Portal when creating the package listing or just " +
+                          "selecting a planned one." +
+                          "\n\nNote: Different categories could have different severities of several test cases."
+            };
+            
+            labelHelpRow.Add(categoryLabel);
+            labelHelpRow.Add(categoryLabelTooltip);
+            
+            _categoryMenu = new ToolbarMenu {name = "CategoryMenu"};
+            _categoryMenu.AddToClassList("category-menu");
+            PopulateCategoryDropdown();
+            
+            categorySelectionBox.Add(labelHelpRow);
+            categorySelectionBox.Add(_categoryMenu);
 
             _validateButton = new Button(RunAllTests) {text = "Validate"};
             _validateButton.AddToClassList("run-all-button");
 
+            _validationInfoBox.Add(categorySelectionBox);
             _validationInfoBox.Add(_pathBox);
             _validationInfoBox.Add(_validateButton);
-
+            
             Add(_validationInfoBox);
         }
 
@@ -96,6 +140,46 @@ namespace AssetStoreTools.Validator
             Add(_allTestsScrollView);
         }
 
+        private void PopulateCategoryDropdown()
+        {
+            var list = _categoryMenu.menu;
+            list.AppendAction("None", _ => OnCategoryValueChange(string.Empty));
+
+            _categoryEvaluator = new CategoryEvaluator(ValidationState.Instance.ValidationStateData.SerializedCategory);
+            
+            HashSet<string> categories = new HashSet<string>();
+            var testData = ValidatorUtility.GetAutomatedTestCases(TestsPath, true);
+            foreach (var test in testData)
+            {
+                AddCategoriesToSet(categories, test.WarningCategory);
+                AddCategoriesToSet(categories, test.ErrorCategory);
+            }
+
+            foreach (var category in categories)
+            {
+                list.AppendAction(ConvertSlashToUnicodeSlash(category), _ => OnCategoryValueChange(category));
+            }
+
+            if (string.IsNullOrEmpty(_categoryEvaluator.GetCategory()))
+                _categoryMenu.text = "Select Category";
+            else
+                _categoryMenu.text = _categoryEvaluator.GetCategory();
+        }
+        
+        private string ConvertSlashToUnicodeSlash(string text)
+        {
+            return text.Replace('/', '\u2215');
+        }
+
+        private void AddCategoriesToSet(HashSet<string> set, ValidatorCategory category)
+        {
+            if (category == null)
+                return;
+            
+            foreach (var filter in category.Filter)
+                set.Add(filter);
+        }
+        
         private List<AutomatedTest> CreateAutomatedTestCases()
         {
             var testData = ValidatorUtility.GetAutomatedTestCases(TestsPath, true);
@@ -104,7 +188,12 @@ namespace AssetStoreTools.Validator
             foreach (var t in testData)
             {
                 var test = new AutomatedTest(t);
+
+                var isTestApplicable = IsTestApplicableForContext(test);
                 
+                if(!isTestApplicable)
+                    continue;
+
                 if (!ValidationState.Instance.TestResults.ContainsKey(test.Id))
                     ValidationState.Instance.CreateTestContainer(test.Id);
                 else
@@ -135,24 +224,33 @@ namespace AssetStoreTools.Validator
         private async void RunAllTests()
         {
             ValidationState.Instance.SetMainPath(_pathBox.GetPathBoxValue());
+            ValidationState.Instance.SetCategory(_categoryEvaluator.GetCategory());
             _validateButton.SetEnabled(false);
 
             // Make sure everything is collected and validation button is disabled
             await Task.Delay(100);
-            
-            foreach (var test in _automatedTests)
+
+            for (int i = 0; i < _automatedTests.Count; i++)
+            {
+                var test = _automatedTests[i];
+
+                EditorUtility.DisplayProgressBar("Validating", $"Running validation: {i + 1} - {test.Title}", (float)i / _automatedTests.Count);
                 test.Run();
-            
+            }
+
+            EditorUtility.ClearProgressBar();
+
             _validateButton.SetEnabled(true);
             ValidationState.Instance.SaveJson();
         }
 
         private void OnTestComplete(int id, TestResult result)
         {
-            ValidationState.Instance.ChangeResult(id, result);
-            
             var testElement = _testElements[id];
-            var currentStatus = result.Result;
+            
+            var currentStatus = _categoryEvaluator.Evaluate(testElement.GetAutomatedTest());
+            result.Result = currentStatus;
+            
             var lastStatus = testElement.GetLastStatus();
 
             if (_testGroupElements.ContainsKey(lastStatus) && _testGroupElements.ContainsKey(currentStatus))
@@ -161,10 +259,40 @@ namespace AssetStoreTools.Validator
                 {
                     _testGroupElements[lastStatus].RemoveTest(testElement);
                     _testGroupElements[currentStatus].AddTest(testElement);
+                    
+                    
+                    testElement.GetAutomatedTest().Result = result;
                 }
             }
-
+            
+            ValidationState.Instance.ChangeResult(id, result);
             testElement.ResultChanged();
+        }
+        
+        private void OnCategoryValueChange(string value)
+        {
+            if (string.IsNullOrEmpty(value))
+            {
+                _categoryMenu.text = "Select Category";
+                _categoryEvaluator.SetCategory(string.Empty);
+            }
+            else
+            {
+                _categoryMenu.text = value;
+                _categoryEvaluator.SetCategory(value);
+            }
+            
+            RepopulateTests();
+        }
+
+        private bool IsTestApplicableForContext(AutomatedTest test)
+        {
+            var selectedCategory = _categoryEvaluator.GetCategory();
+            
+            if (string.IsNullOrEmpty(selectedCategory))
+                return true;
+            
+            return test.IsApplicableToAnySeverity(selectedCategory);
         }
     }
 }

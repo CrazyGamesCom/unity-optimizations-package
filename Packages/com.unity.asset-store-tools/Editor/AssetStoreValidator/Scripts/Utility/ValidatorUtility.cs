@@ -5,7 +5,7 @@ using System.IO;
 
 namespace AssetStoreTools.Validator
 {
-    public static class ValidatorUtility
+    internal static class ValidatorUtility
     {
         private const string TestActionsPath = "Packages/com.unity.asset-store-tools/Editor/AssetStoreValidator/Scripts/TestActions.cs";
 

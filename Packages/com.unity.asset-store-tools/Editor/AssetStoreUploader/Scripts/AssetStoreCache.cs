@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace AssetStoreTools.Uploader
 {
-    public static class AssetStoreCache
+    internal static class AssetStoreCache
     {
         public const string TempCachePath = "Temp/AssetStoreToolsCache";
         public const string PersistentCachePath = "Library/AssetStoreToolsCache";

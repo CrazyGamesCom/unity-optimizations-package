@@ -257,6 +257,11 @@
     background-color: rgb(58, 58, 58);
 }
 
+.extra-packages-scroll-view > * > .unity-scroll-view__vertical-scroller
+{
+    border-right-width: 0;
+}
+
 .label-help-row > Image
 {
     --unity-image: resource("d__Help@2x");

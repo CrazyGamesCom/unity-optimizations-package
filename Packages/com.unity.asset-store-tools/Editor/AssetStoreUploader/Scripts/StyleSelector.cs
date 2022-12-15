@@ -3,7 +3,7 @@ using UnityEngine.UIElements;
 
 namespace AssetStoreTools.Uploader
 {
-    public static class StyleSelector
+    internal static class StyleSelector
     {
         private const string StylesPath = "Packages/com.unity.asset-store-tools/Editor/AssetStoreUploader/Styles/";
 

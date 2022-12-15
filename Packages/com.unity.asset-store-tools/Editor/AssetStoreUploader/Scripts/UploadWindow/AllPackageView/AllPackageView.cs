@@ -1,5 +1,4 @@
-﻿using AssetStoreTools.Utility.Json;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using AssetStoreTools.Validator;
@@ -14,7 +13,7 @@ namespace AssetStoreTools.Uploader
     {
         public new class UxmlFactory : UxmlFactory<AllPackageView> { }
 
-        internal enum PackageSorting
+        private enum PackageSorting
         {
             Name,
             Category,
@@ -65,8 +64,9 @@ namespace AssetStoreTools.Uploader
         private void ConstructAllPackageView()
         {
             SetupFilteringTools();
-            Add(_packageScrollView);
             SetupSpinner();
+
+            Add(_packageScrollView);
         }
 
         private void SetupFilteringTools()
@@ -89,9 +89,8 @@ namespace AssetStoreTools.Uploader
             // Finalize the bar
             topToolsRow.Add(searchField);
             topToolsRow.Add(sortMenu);
-
             Add(topToolsRow);
-
+            
             // Add Callbacks and click events
             searchField.RegisterCallback<ChangeEvent<string>>(evt =>
             {
@@ -106,7 +105,7 @@ namespace AssetStoreTools.Uploader
                 g.SearchFilter(filter);
         }
 
-        public void SetupReadOnlyInfoBox(string infoText)
+        private void SetupReadOnlyInfoBox(string infoText)
         {
             var groupHeader = new Box { name = "GroupReadOnlyInfoBox" };
             groupHeader.AddToClassList("group-info-box");
@@ -401,6 +400,5 @@ namespace AssetStoreTools.Uploader
         }
 
         #endregion
-
     }
 }

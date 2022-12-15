@@ -6,7 +6,7 @@ using UnityEngine.UIElements;
 
 namespace AssetStoreTools.Validator
 {
-    public class AutomatedTestElement : VisualElement
+    internal class AutomatedTestElement : VisualElement
     {
         private const string IconsPath = "Packages/com.unity.asset-store-tools/Editor/AssetStoreValidator/Icons";
         
@@ -30,6 +30,11 @@ namespace AssetStoreTools.Validator
             var sceneChangeHandler = new EditorSceneManager.SceneOpenedCallback((_, __) => ResultChanged());
             EditorSceneManager.sceneOpened += sceneChangeHandler;
             AssetStoreValidation.OnWindowDestroyed += () => EditorSceneManager.sceneOpened -= sceneChangeHandler; 
+        }
+
+        public AutomatedTest GetAutomatedTest()
+        {
+            return _test;
         }
 
         public TestResult.ResultStatus GetLastStatus()
@@ -174,7 +179,16 @@ namespace AssetStoreTools.Validator
             _foldoutBox.Add(labelExpanderRow);
             _foldoutBox.Add(_testImage);
 
-            var testCaseDescription = new Label() { name = "Description", text = _test.Description };
+            var testCaseDescription = new TextField
+            {
+                name = "Description",
+                value = _test.Description,
+                isReadOnly = true,
+                multiline = true,
+                focusable = false,
+                doubleClickSelectsWord = false,
+                tripleClickSelectsLine = false
+            };
             testCaseDescription.AddToClassList("test-description");
 
             _expandedBox = new VisualElement();

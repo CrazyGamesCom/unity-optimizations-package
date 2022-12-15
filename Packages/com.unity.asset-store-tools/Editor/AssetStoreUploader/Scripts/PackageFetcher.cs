@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace AssetStoreTools.Uploader
 {
-    public class PackageFetcher
+    internal class PackageFetcher
     {
         public abstract class PackageFetcherResult
         {

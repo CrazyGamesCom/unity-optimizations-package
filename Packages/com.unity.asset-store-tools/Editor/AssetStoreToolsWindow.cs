@@ -4,7 +4,7 @@ using System;
 
 namespace AssetStoreTools
 {
-    public abstract class AssetStoreToolsWindow : EditorWindow
+    internal abstract class AssetStoreToolsWindow : EditorWindow
     {
         protected abstract string WindowTitle { get; }
 

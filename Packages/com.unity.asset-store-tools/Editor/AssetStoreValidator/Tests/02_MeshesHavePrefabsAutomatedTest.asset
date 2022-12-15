@@ -19,3 +19,11 @@ MonoBehaviour:
     of the texture/mesh/material that you are providing. Please create prefabs for
     all of your imported objects.
   TestMethodName: _2_MeshesHavePrefabs
+  ErrorCategory:
+    Filter: []
+    FilterIsInclusive: 1
+    AppliesToSubCategories: 1
+  WarningCategory:
+    Filter: []
+    FilterIsInclusive: 0
+    AppliesToSubCategories: 1

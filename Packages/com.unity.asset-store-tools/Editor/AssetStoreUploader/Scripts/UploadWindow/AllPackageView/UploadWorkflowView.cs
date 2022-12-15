@@ -8,25 +8,26 @@ using UnityEngine.UIElements;
 
 namespace AssetStoreTools.Uploader
 {
-    public abstract class UploadWorkflowView : VisualElement
+    internal abstract class UploadWorkflowView : VisualElement
     {
         protected TextField PathSelectionField;
 
         // Upload data
-        protected string MainExportPath;
         protected List<string> ExtraExportPaths = new List<string>();
+
+        protected string MainExportPath = String.Empty;
         protected string LocalPackageGuid;
         protected string LocalPackagePath;
         protected string LocalProjectPath;
 
-        protected Action _serializeSelection;
+        protected readonly Action SerializeSelection;
 
         public abstract string Name { get; }
         public abstract string DisplayName { get; }
 
         protected UploadWorkflowView(Action serializeSelection)
         {
-            _serializeSelection = serializeSelection;
+            SerializeSelection = serializeSelection;
             style.display = DisplayStyle.None;
         }
 
@@ -115,6 +116,38 @@ namespace AssetStoreTools.Uploader
                 extraExportPaths.Clear();
             }
         }
+        
+        protected void DeserializeDependencies(JsonValue json, out List<string> dependencies)
+        {
+            dependencies = new List<string>();
+            try
+            {
+                var packageJsonList = json["dependenciesNames"].AsList();
+                dependencies.AddRange(packageJsonList.Select(package => package.AsString()));
+            }
+            catch
+            {
+                ASDebug.LogWarning($"Deserializing dependencies for {Name} failed");
+                dependencies.Clear();
+            }
+        }
+
+        protected void DeserializeDependenciesToggle(JsonValue json, out bool dependenciesBool)
+        {
+            bool includeDependencies;
+            try
+            {
+                includeDependencies = json["dependencies"].AsBool();
+            }
+            catch
+            {
+                ASDebug.LogWarning($"Deserializing dependencies toggle for {Name} failed");
+                includeDependencies = false;
+            }
+
+            dependenciesBool = includeDependencies;
+        }
+        
 
         private string DeserializePath(JsonValue pathDict)
         {
@@ -132,6 +165,6 @@ namespace AssetStoreTools.Uploader
 
         protected abstract void BrowsePath();
 
-        public abstract Task<PackageExporter.ExportResult> ExportPackage(bool isCompleteProject);
+        public abstract Task<PackageExporter.ExportResult> ExportPackage(string packageName, bool isCompleteProject);
     }
 }

@@ -19,3 +19,11 @@ MonoBehaviour:
     them, if the Prefabs are marked as Static. Please make sure you have appropriately
     sized colliders applied to your prefabs.
   TestMethodName: _4_IncludeColliders
+  ErrorCategory:
+    Filter: []
+    FilterIsInclusive: 1
+    AppliesToSubCategories: 1
+  WarningCategory:
+    Filter: []
+    FilterIsInclusive: 0
+    AppliesToSubCategories: 1

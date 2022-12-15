@@ -18,3 +18,11 @@ MonoBehaviour:
   Description: 'Meshes should be facing the correct way. The proper facing is: Z
     vector is forward, Y vector is up, X vector is right.'
   TestMethodName: _7_FixOrientation
+  ErrorCategory:
+    Filter: []
+    FilterIsInclusive: 1
+    AppliesToSubCategories: 1
+  WarningCategory:
+    Filter: []
+    FilterIsInclusive: 0
+    AppliesToSubCategories: 1

@@ -9,7 +9,7 @@ using UnityEngine.UIElements;
 
 namespace AssetStoreTools.Uploader
 {
-    public class ValidationElement : VisualElement
+    internal class ValidationElement : VisualElement
     {
         private Button _validateButton;
         private Button _viewReportButton;
@@ -19,7 +19,11 @@ namespace AssetStoreTools.Uploader
         private Image _infoBoxImage;
 
         private string _localPath;
-        
+        private string _category;
+
+        private CategoryEvaluator _categoryEvaluator;
+        private readonly Dictionary<int, AutomatedTestElement> _testElements = new Dictionary<int, AutomatedTestElement>();
+
         public ValidationElement()
         {
             ConstructValidationElement();
@@ -31,6 +35,11 @@ namespace AssetStoreTools.Uploader
             _localPath = path;
             
             EnableValidation(true);
+        }
+        
+        public void SetCategory(string category)
+        {
+            _category = category;
         }
 
         private void ConstructValidationElement()
@@ -60,14 +69,17 @@ namespace AssetStoreTools.Uploader
 
             SetupInfoBox("");
         }
-        
+
         private async void GetOutcomeResults()
         {
             TestActions testActions = TestActions.Instance;
             testActions.SetMainPath(_localPath);
-            
+
             ValidationState.Instance.SetMainPath(_localPath);
+            ValidationState.Instance.SetCategory(_category);
             _validateButton.SetEnabled(false);
+
+            _categoryEvaluator = new CategoryEvaluator(_category);
 
             var testsPath = "Packages/com.unity.asset-store-tools/Editor/AssetStoreValidator/Tests";
             var testObjects = ValidatorUtility.GetAutomatedTestCases(testsPath, true);
@@ -75,14 +87,21 @@ namespace AssetStoreTools.Uploader
 
             // Make sure everything is collected and validation button is disabled
             await Task.Delay(100);
-            
+
             var outcomeList = new List<TestResult>();
-            foreach (var test in automatedTests)
+            _testElements.Clear();
+
+            for (int i = 0; i < automatedTests.Count; i++)
             {
+                var test = automatedTests[i];
                 try
                 {
+                    var testElement = new AutomatedTestElement(test);
+                    _testElements.Add(test.Id, testElement);
+
+                    test.OnTestComplete += OnTestComplete;
+                    EditorUtility.DisplayProgressBar("Validating", $"Running validation: {i + 1} - {test.Title}", (float)i / automatedTests.Count);
                     test.Run();
-                    ValidationState.Instance.ChangeResult(test.Id, test.Result);
                 }
                 catch (Exception e)
                 {
@@ -92,10 +111,12 @@ namespace AssetStoreTools.Uploader
 
                 outcomeList.Add(test.Result);
             }
-            
+
+            EditorUtility.ClearProgressBar();
+
             EnableInfoBox(true, outcomeList);
             _validateButton.SetEnabled(true);
-            
+
             ValidationState.Instance.SaveJson();
         }
         
@@ -147,12 +168,27 @@ namespace AssetStoreTools.Uploader
 
         private void ViewReport()
         {
-            // Re-run validation if it is out of sync
+            // Re-run validation if path is out of sync
             if (ValidationState.Instance.ValidationStateData.SerializedMainPath != _localPath)
+                GetOutcomeResults();
+            
+            // Re-run validation if category is out of sync
+            if (ValidationState.Instance.ValidationStateData.SerializedCategory != _category)
                 GetOutcomeResults();
             
             // Show the Validator
             AssetStoreTools.ShowAssetStoreToolsValidator();
+        }
+
+        private void OnTestComplete(int id, TestResult result)
+        {
+            var testElement = _testElements[id];
+            var test = testElement.GetAutomatedTest();
+            
+            result.Result = _categoryEvaluator.Evaluate(test);
+            test.Result = result;
+
+            ValidationState.Instance.ChangeResult(id, result);
         }
     }
 }

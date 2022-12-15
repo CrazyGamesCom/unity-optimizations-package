@@ -3,21 +3,21 @@ using UnityEngine;
 
 namespace AssetStoreTools.Validator
 {
-    public interface IMessageAction
+    internal interface IMessageAction
     {
         string ActionTooltip { get; }
 
         void Execute();
     }
 
-    public enum ClickActionType
+    internal enum ClickActionType
     {
         None = 0,
         HighlightObject = 1,
         OpenAsset = 2
     }
 
-    public class MessageActionHighlight : IMessageAction
+    internal class MessageActionHighlight : IMessageAction
     {
         private Object _objectToHighlight;
 
@@ -45,7 +45,7 @@ namespace AssetStoreTools.Validator
         }
     }
 
-    public class MessageActionOpenAsset : IMessageAction
+    internal class MessageActionOpenAsset : IMessageAction
     {
         private Object _objectToOpen;
         public int LineNumber { get; set; }

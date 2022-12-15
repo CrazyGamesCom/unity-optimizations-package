@@ -3,9 +3,9 @@ using UnityEngine.Analytics;
 
 namespace AssetStoreTools.Uploader
 {
-    public static class ASAnalytics
+    internal static class ASAnalytics
     {
-        private const int VersionId = 2;
+        private const int VersionId = 3;
         private const int MaxEventsPerHour = 20;
         private const int MaxNumberOfElements = 1000;
 
@@ -28,8 +28,9 @@ namespace AssetStoreTools.Uploader
             public string ValidatorResults;
             public string UploadFinishedReason;
             public double TimeTaken;
-            public int PackageSize;
+            public long PackageSize;
             public string Workflow;
+            public string EndpointUrl;
         }
 
         public static void SendUploadingEvent(AnalyticsData data)

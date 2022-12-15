@@ -112,7 +112,7 @@ namespace AssetStoreTools.Uploader
             if (GroupName.ToLower() != "draft")
             {
                 _groupLabel.SetEnabled(false);
-                _groupContent.SetEnabled(false);
+                _groupContent.AddToClassList("unity-disabled");
                 groupSeparator.style.display = DisplayStyle.Flex;
             }
 

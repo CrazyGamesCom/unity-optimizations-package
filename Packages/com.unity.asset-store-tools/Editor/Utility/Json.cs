@@ -29,7 +29,7 @@ namespace AssetStoreTools.Utility.Json
 	 * asset(v["hello"].AsString() == "world");
 	 * 
 	 */
-	public struct JsonValue
+	internal struct JsonValue
 	{
 		public JsonValue(object o)
 		{

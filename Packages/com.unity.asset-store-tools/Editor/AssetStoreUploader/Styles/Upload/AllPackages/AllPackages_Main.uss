@@ -38,6 +38,7 @@
     justify-content: space-between;
     
     height: 24px;
+    
     margin: 0 -1px 0 -1px;
 }
 
@@ -211,12 +212,12 @@
 .header-progress-bar
 {
     margin: 0 -6px -1px -6px;
-    padding: 0;
+    padding: 0 0 2px 0;
 }
 
 .header-progress-bar > * > .unity-progress-bar__background
 {
-    height: 7px;
+    height: 5px;
 }
 
 .group-separator
@@ -361,11 +362,23 @@ PACKAGE OPTIONS
     flex-grow: 1;
     
     height: 100px;
+    
+    margin-left: 3px;
+}
+
+.extra-packages-scroll-view > .unity-scroll-view__content-viewport
+{
+    margin-left: 1px;
 }
 
 .extra-packages-scroll-view > * > .unity-scroll-view__content-container
 {
     padding: 3px 0 5px 0;
+}
+
+.extra-packages-scroll-view > * > .unity-scroll-view__vertical-scroller
+{
+    margin: -1px 0;
 }
 
 .extra-packages-toggle

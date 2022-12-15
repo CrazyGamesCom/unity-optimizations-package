@@ -8,7 +8,7 @@ using UnityEngine.UIElements;
 
 namespace AssetStoreTools.Uploader
 {
-    public class UnityPackageUploadWorkflowView : UploadWorkflowView
+    internal class UnityPackageUploadWorkflowView : UploadWorkflowView
     {
         public const string WorkflowName = "UnitypackageWorkflow";
         public const string WorkflowDisplayName = "Pre-exported .unitypackage";
@@ -117,10 +117,10 @@ namespace AssetStoreTools.Uploader
             LocalProjectPath = selectedPackagePath;
 
             if (serializeValues)
-                _serializeSelection?.Invoke();
+                SerializeSelection?.Invoke();
         }
 
-        public override Task<PackageExporter.ExportResult> ExportPackage(bool _)
+        public override Task<PackageExporter.ExportResult> ExportPackage(string __, bool _)
         {
             if (string.IsNullOrEmpty(MainExportPath))
                 return Task.FromResult(new PackageExporter.ExportResult() { Success = false, Error = ASError.GetGenericError(new ArgumentException("Package export path is empty or null")) });

@@ -12,7 +12,10 @@ namespace AssetStoreTools.Validator
         private ValidationTestScriptableObject[] _allObjects;
         
         private SerializedProperty _script;
-        
+
+        private SerializedProperty _errorCategory;
+        private SerializedProperty _warningCategory;
+
         private string[] _allMethodNames;
         private bool _hadChanges;
         
@@ -23,6 +26,10 @@ namespace AssetStoreTools.Validator
             _data = target as ValidationTestScriptableObject;
 
             _script = serializedObject.FindProperty("m_Script");
+            
+            _errorCategory = serializedObject.FindProperty(nameof(ValidationTestScriptableObject.ErrorCategory));
+            _warningCategory = serializedObject.FindProperty(nameof(ValidationTestScriptableObject.WarningCategory));
+            
             _allObjects = ValidatorUtility.GetAutomatedTestCases("Packages/com.unity.asset-store-tools/Editor/AssetStoreValidator/", true);
             _allMethodNames = TestActions.Instance.GetType().GetMethods().Where(x => x.DeclaringType == typeof(TestActions)).Select(x => x.Name).ToArray();
             _hadChanges = false;
@@ -52,7 +59,10 @@ namespace AssetStoreTools.Validator
             EditorGUILayout.LabelField("Description");
             GUIStyle myTextAreaStyle = new GUIStyle(EditorStyles.textArea) { wordWrap = true };
             _data.Description = EditorGUILayout.TextArea(_data.Description, myTextAreaStyle);
-
+            
+            EditorGUILayout.PropertyField(_errorCategory, new GUIContent("Error Category"));
+            EditorGUILayout.PropertyField(_warningCategory, new GUIContent("Warning Category"));
+            
             // Test Method field
             if (!ContainsMethod() && !string.IsNullOrEmpty(_data.Title))
             {

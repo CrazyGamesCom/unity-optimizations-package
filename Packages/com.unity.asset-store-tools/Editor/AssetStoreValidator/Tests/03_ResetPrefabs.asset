@@ -18,3 +18,14 @@ MonoBehaviour:
   Description: Prefabs must have their position/rotation set to 0, and their scale
     set to 1.
   TestMethodName: _3_ResetPrefabs
+  ErrorCategory:
+    Filter:
+    - 3D
+    - Essentials
+    - Templates
+    FilterIsInclusive: 1
+    AppliesToSubCategories: 1
+  WarningCategory:
+    Filter: []
+    FilterIsInclusive: 0
+    AppliesToSubCategories: 1

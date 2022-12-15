@@ -5,7 +5,7 @@ using UnityEngine.UIElements;
 
 namespace AssetStoreTools.Validator
 {
-    public class AutomatedTestsGroupElement : VisualElement
+    internal class AutomatedTestsGroupElement : VisualElement
     {
         private const string IconsPath = "Packages/com.unity.asset-store-tools/Editor/AssetStoreValidator/Icons";
 

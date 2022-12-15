@@ -1,5 +1,6 @@
 using AssetStoreTools.Utility.Json;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
@@ -12,13 +13,18 @@ using UnityEngine;
 
 namespace AssetStoreTools.Uploader
 {
-    public static class AssetStoreAPI
+    /// <summary>
+    /// A class for retrieving data from the Asset Store backend <para/>
+    /// <b>Note:</b> most data retrieval methods require <see cref="SavedSessionId"/> to be set
+    /// </summary>
+    internal static class AssetStoreAPI
     {
-        public const string ToolVersion = "V6.0.2";
+        public const string ToolVersion = "V6.2.0";
         private const string UnauthSessionId = "26c4202eb475d02864b40827dfff11a14657aa41";
         private const string KharmaSessionId = "kharma.sessionid";
+        private const int UploadResponseTimeoutMs = 10000;
         
-        private static string AssetStoreProdUrl = "https://kharma.unity3d.com";
+        public static string AssetStoreProdUrl = "https://kharma.unity3d.com";
         private static string s_sessionId = EditorPrefs.GetString(KharmaSessionId);
         private static HttpClient httpClient = new HttpClient();
         private static CancellationTokenSource s_downloadCancellationSource;
@@ -35,7 +41,7 @@ namespace AssetStoreTools.Uploader
 
         public static bool IsCloudUserAvailable => CloudProjectSettings.userName != "anonymous";
         public static string LastLoggedInUser = "";
-        public static Dictionary<string, OngoingUpload> ActiveUploads = new Dictionary<string, OngoingUpload>();
+        public static ConcurrentDictionary<string, OngoingUpload> ActiveUploads = new ConcurrentDictionary<string, OngoingUpload>();
         public static bool IsUploading => (ActiveUploads.Count > 0);
 
         static AssetStoreAPI()
@@ -45,7 +51,10 @@ namespace AssetStoreTools.Uploader
             httpClient.Timeout = TimeSpan.FromMinutes(1320);
         }
 
-        public class APIResult
+        /// <summary>
+        /// A structure used to return the success outcome and the result of Asset Store API calls
+        /// </summary>
+        internal class APIResult
         {
             public JsonValue Response;
             public bool Success;
@@ -60,12 +69,24 @@ namespace AssetStoreTools.Uploader
 
         #region Login API
 
+        /// <summary>
+        /// A login API call that uses the email and password credentials
+        /// </summary>
+        /// <remarks>
+        /// <b>Note:</b> this method only returns a response from the server and does not set the <see cref="SavedSessionId"/> itself
+        /// </remarks>
         public static async Task<APIResult> LoginWithCredentialsAsync(string email, string password)
         {
             FormUrlEncodedContent data = GetLoginContent(new Dictionary<string, string> { { "user", email }, { "pass", password } });
             return await LoginAsync(data);
         }
 
+        /// <summary>
+        /// A login API call that uses the <see cref="SavedSessionId"/>
+        /// </summary>
+        /// <remarks>
+        /// <b>Note:</b> this method only returns a response from the server and does not set the <see cref="SavedSessionId"/> itself
+        /// </remarks>
         public static async Task<APIResult> LoginWithSessionAsync()
         {
             if (string.IsNullOrEmpty(SavedSessionId))
@@ -75,6 +96,13 @@ namespace AssetStoreTools.Uploader
             return await LoginAsync(data);
         }
 
+        /// <summary>
+        /// A login API call that uses the <see cref="CloudProjectSettings.accessToken"/><para/>
+        /// </summary>
+        /// <remarks>
+        /// <b>Note:</b> this method only returns a response from the server and does not set the <see cref="SavedSessionId"/> itself
+        /// </remarks>
+        /// <param name="token">Cloud access token. Can be retrieved by calling <see cref="CloudProjectSettings.accessToken"/></param>
         public static async Task<APIResult> LoginWithTokenAsync(string token)
         {
             FormUrlEncodedContent data = GetLoginContent(new Dictionary<string, string> { { "user_access_token", token } });
@@ -149,6 +177,11 @@ namespace AssetStoreTools.Uploader
             return categoryJson;
         }
 
+        /// <summary>
+        /// Retrieve data for all packages associated with the currently logged in account (identified by <see cref="SavedSessionId"/>)
+        /// </summary>
+        /// <param name="useCached"></param>
+        /// <returns></returns>
         public static async Task<APIResult> GetFullPackageDataAsync(bool useCached)
         {
             if (useCached)
@@ -182,6 +215,21 @@ namespace AssetStoreTools.Uploader
             }
         }
 
+        /// <summary>
+        /// Retrieve the thumbnail textures for all packages within the provided json structure and perform a given action after each retrieval
+        /// </summary>
+        /// <param name="packageJson">A json file retrieved from <see cref="GetFullPackageDataAsync(bool)"/></param>
+        /// <param name="useCached">Return cached thumbnails if they are found</param>
+        /// <param name="onSuccess">
+        /// Action to perform upon a successful thumbnail retrieval <para/>
+        /// <see cref="string"/> - Package Id <br/>
+        /// <see cref="Texture2D"/> - Associated Thumbnail
+        /// </param>
+        /// <param name="onFail">
+        /// Action to perform upon a failed thumbnail retrieval <para/>
+        /// <see cref="string"/> - Package Id <br/>
+        /// <see cref="ASError"/> - Associated error
+        /// </param>
         public static async void GetPackageThumbnails(JsonValue packageJson, bool useCached, Action<string, Texture2D> onSuccess, Action<string, ASError> onFail)
         {
             SetupDownloadCancellation();
@@ -251,6 +299,9 @@ namespace AssetStoreTools.Uploader
             return textureBytes;
         }
 
+        /// <summary>
+        /// Retrieve, update the cache and return the updated data for a previously cached package
+        /// </summary>
         public static async Task<APIResult> GetRefreshedPackageData(string packageId)
         {
             try
@@ -306,6 +357,12 @@ namespace AssetStoreTools.Uploader
             }
         }
 
+        /// <summary>
+        /// Retrieve all Unity versions that the given package has already had uploaded content with
+        /// </summary>
+        /// <param name="packageId"></param>
+        /// <param name="versionId"></param>
+        /// <returns></returns>
         public static List<string> GetPackageUploadedVersions(string packageId, string versionId)
         {
             var versions = new List<string>();
@@ -337,23 +394,33 @@ namespace AssetStoreTools.Uploader
 
         #region Package Upload API
 
+        /// <summary>
+        /// Upload a content file (.unitypackage) to a provided package version
+        /// </summary>
+        /// <param name="versionId"></param>
+        /// <param name="packageName">Name of the package. Only used for identifying the package in <see cref="OngoingUpload"/> class</param>
+        /// <param name="filePath">Path to the .unitypackage file</param>
+        /// <param name="localPackageGuid">The <see cref="AssetDatabase.AssetPathToGUID(string)"/> value of the main content folder for the provided package</param>
+        /// <param name="localPackagePath">The local path (relative to the root project folder) of the main content folder for the provided package</param>
+        /// <param name="localProjectPath">The path to the project that this package was built from</param>
+        /// <returns></returns>
         public static async Task<PackageUploadResult> UploadPackageAsync(string versionId, string packageName, string filePath,
             string localPackageGuid, string localPackagePath, string localProjectPath)
         {
             try
             {
                 ASDebug.Log("Upload task starting");
-                // Reloading assemblies or entering Play Mode may cancel the upload as static variables are reset
                 EditorApplication.LockReloadAssemblies();
+                
                 if (!IsUploading) // Only subscribe before the first upload
                     EditorApplication.playModeStateChanged += EditorPlayModeStateChangeHandler;
 
                 var progressData = new OngoingUpload(versionId, packageName);
-                ActiveUploads.Add(versionId, progressData);
+                ActiveUploads.TryAdd(versionId, progressData);
 
                 var result = await Task.Run(() => UploadPackageTask(progressData, filePath, localPackageGuid, localPackagePath, localProjectPath));
 
-                ActiveUploads.Remove(versionId);
+                ActiveUploads.TryRemove(versionId, out OngoingUpload _);
 
                 ASDebug.Log("Upload task finished");
                 return result;
@@ -366,6 +433,7 @@ namespace AssetStoreTools.Uploader
             {
                 if (!IsUploading) // Only unsubscribe after the last upload
                     EditorApplication.playModeStateChanged -= EditorPlayModeStateChangeHandler;
+                
                 EditorApplication.UnlockReloadAssemblies();
             }
         }
@@ -391,6 +459,7 @@ namespace AssetStoreTools.Uploader
             httpClient.DefaultRequestHeaders.Clear();
             httpClient.DefaultRequestHeaders.Add("X-Unity-Session", SavedSessionId);
 
+            bool responseTimedOut = false;
             long chunkSize = 32768;
             try
             {
@@ -401,16 +470,30 @@ namespace AssetStoreTools.Uploader
 
                 // Progress tracking
                 int updateIntervalMs = 100;
-                DateTime previousTime = DateTime.Now;
+                bool allBytesSent = false;
+                DateTime timeOfCompletion = default(DateTime);
+
                 while (!response.IsCompleted)
                 {
-                    var currentTime = DateTime.Now;
-                    if (DateTime.Now.Subtract(previousTime).Milliseconds < updateIntervalMs)
-                        continue;
-                    previousTime = currentTime;
-
                     float uploadProgress = (float)requestFileStream.Position / requestFileStream.Length * 100;
                     currentUpload.UpdateProgress(uploadProgress);
+                    Thread.Sleep(updateIntervalMs);
+
+                    // A timeout for rare cases, when package uploading reaches 100%, but PutAsync task IsComplete value remains 'False'
+                    if(requestFileStream.Position == requestFileStream.Length)
+                    {
+                        if (!allBytesSent)
+                        {
+                            allBytesSent = true;
+                            timeOfCompletion = DateTime.UtcNow;
+                        }
+                        else if(DateTime.UtcNow.Subtract(timeOfCompletion).TotalMilliseconds > UploadResponseTimeoutMs)
+                        {
+                            responseTimedOut = true;
+                            currentUpload.Cancel();
+                            break;
+                        }
+                    }
                 }
 
                 // 2020.3 - although cancellation token shows a requested cancellation, the HttpClient
@@ -431,8 +514,16 @@ namespace AssetStoreTools.Uploader
             catch (OperationCanceledException)
             {
                 // Uploading is canceled
-                ASDebug.Log("Upload operation cancelled");
-                return PackageUploadResult.PackageUploadCancelled();
+                if (!responseTimedOut)
+                {
+                    ASDebug.Log("Upload operation cancelled");
+                    return PackageUploadResult.PackageUploadCancelled();
+                }
+                else
+                {
+                    ASDebug.LogWarning("All data has been uploaded, but waiting for the response timed out");
+                    return PackageUploadResult.PackageUploadResponseTimeout();
+                }
             }
             catch (Exception e)
             {
@@ -447,6 +538,9 @@ namespace AssetStoreTools.Uploader
             }
         }
 
+        /// <summary>
+        /// Cancel the uploading task for a package with the provided package id
+        /// </summary>
         public static void AbortPackageUpload(string packageId)
         {
             ActiveUploads[packageId]?.Cancel();
@@ -455,7 +549,6 @@ namespace AssetStoreTools.Uploader
         #endregion
 
         #region Utility Methods
-
         private static string GetLicenseHash()
         {
             return UnityEditorInternal.InternalEditorUtility.GetAuthToken().Substring(0, 40);
@@ -596,6 +689,10 @@ namespace AssetStoreTools.Uploader
             return categories;
         }
         
+        /// <summary>
+        /// Check if the account data is for a valid publisher account
+        /// </summary>
+        /// <param name="json">Json structure retrieved from one of the API login methods</param>
         public static bool IsPublisherValid(JsonValue json, out ASError error)
         {
             error = ASError.GetPublisherNullError(json["name"]);
@@ -607,11 +704,17 @@ namespace AssetStoreTools.Uploader
             return !json["publisher"].IsNull();
         }
 
+        /// <summary>
+        /// Cancel all data retrieval tasks
+        /// </summary>
         public static void AbortDownloadTasks()
         {
             s_downloadCancellationSource?.Cancel();
         }
 
+        /// <summary>
+        /// Cancel all data uploading tasks
+        /// </summary>
         public static void AbortUploadTasks()
         {
             foreach(var upload in ActiveUploads)

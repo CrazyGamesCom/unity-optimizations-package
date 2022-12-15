@@ -24,3 +24,11 @@ MonoBehaviour:
     if users will need to do any coding. If your asset contains art (3D models, sprites)
     and you used code to set up a demo scene, you may skip this step.
   TestMethodName: _6_IncludeDocumentation
+  ErrorCategory:
+    Filter: []
+    FilterIsInclusive: 1
+    AppliesToSubCategories: 1
+  WarningCategory:
+    Filter: []
+    FilterIsInclusive: 0
+    AppliesToSubCategories: 1

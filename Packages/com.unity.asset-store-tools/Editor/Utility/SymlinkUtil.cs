@@ -2,7 +2,7 @@
 
 namespace AssetStoreTools.Utility
 {
-    public static class SymlinkUtil
+    internal static class SymlinkUtil
     {
         private const FileAttributes FolderSymlinkAttributes = FileAttributes.Directory | FileAttributes.ReparsePoint;
 

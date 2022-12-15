@@ -1,15 +1,21 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
+using UnityEngine.Experimental.Rendering;
 using UnityEngine.SceneManagement;
+using CompilationPipeline = UnityEditor.Compilation.CompilationPipeline;
+using Object = UnityEngine.Object;
 
 namespace AssetStoreTools.Validator
 {
-    public class TestActions
+    internal class TestActions
     {
         private enum FileType
         {
@@ -21,12 +27,15 @@ namespace AssetStoreTools.Validator
             Documentation,
             JavaScript,
             LossyAudio,
+            NonLossyAudio,
             Video,
             Executable,
             Mixamo,
             SpeedTree,
             Texture,
-            Shader
+            Shader,
+            MonoScript,
+            PrecompiledAssembly
         }
 
         public static TestActions Instance => s_instance ?? (s_instance = new TestActions());
@@ -76,6 +85,10 @@ namespace AssetStoreTools.Validator
                     guids = AssetDatabase.FindAssets("t:AudioClip", new[] { s_mainFolderPath });
                     extensions = new[] { ".mp3", ".ogg" };
                     break;
+                case FileType.NonLossyAudio:
+                    guids = AssetDatabase.FindAssets("t:AudioClip", new[] { s_mainFolderPath });
+                    extensions = new[] { ".wav", ".aif", ".aiff"};
+                    break;
                 case FileType.JavaScript:
                     guids = AssetDatabase.FindAssets("t:TextAsset", new[] { s_mainFolderPath });
                     extensions = new[] { ".js" };
@@ -94,16 +107,25 @@ namespace AssetStoreTools.Validator
                     break;
                 case FileType.Documentation:
                     guids = AssetDatabase.FindAssets("", new[] { s_mainFolderPath });
-                    extensions = new[] { ".txt", ".pdf", ".html", ".rtf" };
+                    extensions = new[] { ".txt", ".pdf", ".html", ".rtf", ".md" };
                     break;
                 case FileType.SpeedTree:
                     guids = AssetDatabase.FindAssets("", new[] { s_mainFolderPath });
-                    extensions = new[] { ".spm", ".srt", ".stm", ".scs", ".sfc", ".sme" };
+                    extensions = new[] { ".spm", ".srt", ".stm", ".scs", ".sfc", ".sme", ".st" };
                     break;
                 case FileType.Shader:
                     guids = AssetDatabase.FindAssets("", new[] { s_mainFolderPath });
                     extensions = new[] { ".shader", ".shadergraph", ".raytrace", ".compute" };
                     break;
+                case FileType.MonoScript:
+                    guids = AssetDatabase.FindAssets("t:script", new[] { s_mainFolderPath });
+                    extensions = new[] { ".cs" };
+                    break;
+                case FileType.PrecompiledAssembly:
+                    var rootProjectPath = Application.dataPath.Substring(0, Application.dataPath.Length - "Assets".Length);
+                    var allDllPaths = CompilationPipeline.GetPrecompiledAssemblyPaths(CompilationPipeline.PrecompiledAssemblySources.UserAssembly);
+                    var dllPaths = allDllPaths.Select(x => x.StartsWith(rootProjectPath) ? x.Substring(rootProjectPath.Length) : x).Where(x => x.StartsWith(s_mainFolderPath)).ToArray();
+                    return dllPaths.Select(x => AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(x)).ToArray();
                 default:
                     guids = Array.Empty<string>();
                     break;
@@ -157,8 +179,8 @@ namespace AssetStoreTools.Validator
             meshes.AddRange(meshFilters.Select(m => m.sharedMesh));
             meshes.AddRange(skinnedMeshes.Select(m => m.sharedMesh));
 
-            meshes = meshes.Where(m => AssetDatabase.GetAssetPath(m).StartsWith("Assets" + Path.DirectorySeparatorChar) ||
-            AssetDatabase.GetAssetPath(m).StartsWith("Assets" + Path.AltDirectorySeparatorChar)).ToList();
+            meshes = meshes.Where(m => AssetDatabase.GetAssetPath(m).StartsWith("Assets/") ||
+            AssetDatabase.GetAssetPath(m).StartsWith("Packages/")).ToList();
 
             return meshes.ToArray();
         }
@@ -175,7 +197,7 @@ namespace AssetStoreTools.Validator
             };
 
             var scenes = GetObjectsFromAssets(FileType.Scene);
-            
+
 
             if (scenes.Length == 0)
             {
@@ -242,11 +264,12 @@ namespace AssetStoreTools.Validator
 
             var usedModelPaths = new List<string>();
             var prefabs = GetObjectsFromAssets(FileType.Prefab);
+            var missingMeshReferencePrefabs = new List<GameObject>();
 
-            // Get all meshes in existing prefabs
+            // Get all meshes in existing prefabs and check if prefab has missing mesh references
             foreach (var o in prefabs)
             {
-                var p = (GameObject) o;
+                var p = (GameObject)o;
                 if (p == null)
                 {
                     Debug.LogWarning($"Unable to load Prefab in {AssetDatabase.GetAssetPath(p)}");
@@ -259,11 +282,14 @@ namespace AssetStoreTools.Validator
                     string meshPath = AssetDatabase.GetAssetPath(mesh);
                     usedModelPaths.Add(meshPath);
                 }
+
+                if (HasMissingMeshReferences(p))
+                    missingMeshReferencePrefabs.Add(p);
             }
 
             // Get all meshes in existing models
             List<string> allModelPaths = GetAllModelMeshPaths();
-            
+
             // Get the list of meshes without prefabs
             List<string> unusedModels = allModelPaths.Except(usedModelPaths).ToList();
 
@@ -272,11 +298,14 @@ namespace AssetStoreTools.Validator
                 result.AddMessage("All found prefabs have meshes!");
                 return result;
             }
-            
+
             result.Result = TestResult.ResultStatus.Fail;
             var models = unusedModels.Select(AssetDatabase.LoadAssetAtPath<UnityEngine.Object>).ToArray();
             result.AddMessage("The following models do not have associated prefabs", null, models);
-            
+
+            if (missingMeshReferencePrefabs.Count > 0)
+                result.AddMessage("The following prefabs have missing mesh references", null, missingMeshReferencePrefabs.ToArray());
+
             return result;
         }
 
@@ -287,10 +316,10 @@ namespace AssetStoreTools.Validator
 
             foreach (var o in models)
             {
-                var m = (GameObject) o;
+                var m = (GameObject)o;
                 var modelPath = AssetDatabase.GetAssetPath(m);
                 var assetImporter = AssetImporter.GetAtPath(modelPath);
-                if(assetImporter is ModelImporter modelImporter)
+                if (assetImporter is ModelImporter modelImporter)
                 {
                     var clips = modelImporter.clipAnimations.Count();
                     var meshes = GetCustomMeshesInObject(m);
@@ -302,6 +331,20 @@ namespace AssetStoreTools.Validator
             }
 
             return paths;
+        }
+
+        private bool HasMissingMeshReferences(GameObject go)
+        {
+            var meshes = go.GetComponentsInChildren<MeshFilter>(true);
+            var skinnedMeshes = go.GetComponentsInChildren<SkinnedMeshRenderer>(true);
+
+            if (meshes.Length == 0 && skinnedMeshes.Length == 0)
+                return false;
+
+            if (meshes.Any(x => x.sharedMesh == null) || skinnedMeshes.Any(x => x.sharedMesh == null))
+                return true;
+
+            return false;
         }
 
         #endregion
@@ -317,22 +360,44 @@ namespace AssetStoreTools.Validator
 
             var prefabs = GetObjectsFromAssets(FileType.Prefab);
             var badPrefabs = new List<GameObject>();
+            var badPrefabsLowOffset = new List<GameObject>();
 
             foreach (var o in prefabs)
             {
-                var p = (GameObject) o;
-                if (p.transform.position != Vector3.zero || p.transform.localScale != Vector3.one)
-                    badPrefabs.Add(p);
+                var p = (GameObject)o;
+                var hasRectTransform = p.TryGetComponent(out RectTransform _);
+                if (hasRectTransform || !GetCustomMeshesInObject(p).Any())
+                    continue;
+
+                var positionString = p.transform.position.ToString("F12");
+                var rotationString = p.transform.rotation.eulerAngles.ToString("F12");
+                var localScaleString = p.transform.localScale.ToString("F12");
+
+                var vectorZeroString = Vector3.zero.ToString("F12");
+                var vectorOneString = Vector3.one.ToString("F12");
+
+                if (positionString != vectorZeroString || rotationString != vectorZeroString || localScaleString != vectorOneString)
+                {
+                    if (p.transform.position == Vector3.zero && p.transform.rotation.eulerAngles == Vector3.zero && p.transform.localScale == Vector3.one)
+                        badPrefabsLowOffset.Add(p);
+                    else
+                        badPrefabs.Add(p);
+                }
             }
 
-            if (badPrefabs.Count <= 0)
+            if (badPrefabs.Count == 0 && badPrefabsLowOffset.Count == 0)
             {
                 result.AddMessage("All found prefabs were reset!");
                 return result;
             }
-            
+
             result.Result = TestResult.ResultStatus.Fail;
-            result.AddMessage("The following prefabs' transforms do not fit the requirements", null, badPrefabs.ToArray());
+            if (badPrefabs.Count > 0)
+                result.AddMessage("The following prefabs' transforms do not fit the requirements", null, badPrefabs.ToArray());
+            if (badPrefabsLowOffset.Count > 0)
+                result.AddMessage("The following prefabs have unusually low transform values, which might not be accurately displayed " +
+                    "in the Inspector window. Please use the 'Debug' Inspector mode to review the Transform component of these prefabs " +
+                    "or reset the Transform components using the right-click context menu", null, badPrefabsLowOffset.ToArray());
 
             return result;
         }
@@ -353,7 +418,7 @@ namespace AssetStoreTools.Validator
 
             foreach (var o in prefabs)
             {
-                var p = (GameObject) o;
+                var p = (GameObject)o;
                 var meshes = GetCustomMeshesInObject(p);
 
                 if (!p.isStatic || !meshes.Any())
@@ -369,7 +434,7 @@ namespace AssetStoreTools.Validator
                 result.AddMessage("All found prefabs have colliders!");
                 return result;
             }
-            
+
             result.Result = TestResult.ResultStatus.Warning;
             result.AddMessage("The following prefabs contain meshes, but colliders were not found", null, badPrefabs.ToArray());
 
@@ -392,7 +457,7 @@ namespace AssetStoreTools.Validator
 
             foreach (var o in prefabs)
             {
-                var p = (GameObject) o;
+                var p = (GameObject)o;
                 if (p.GetComponents<Component>().Length == 1 && p.transform.childCount == 0)
                     badPrefabs.Add(p);
             }
@@ -402,7 +467,7 @@ namespace AssetStoreTools.Validator
                 result.AddMessage("No empty prefabs were found!");
                 return result;
             }
-            
+
             result.Result = TestResult.ResultStatus.Fail;
             result.AddMessage("The following prefabs are empty", null, badPrefabs.ToArray());
 
@@ -427,7 +492,7 @@ namespace AssetStoreTools.Validator
             {
                 result.Result = TestResult.ResultStatus.Warning;
                 result.AddMessage("No potential documentation files ('.txt', '.pdf', " +
-                                  "'.html', '.rtf') found within the given path.", null, textFiles);
+                                  "'.html', '.rtf', '.md') found within the given path.", null, textFiles);
             }
             else if (documentationFiles.Length == 0)
             {
@@ -476,31 +541,31 @@ namespace AssetStoreTools.Validator
 
             var models = GetObjectsFromAssets(FileType.Model);
             var badModels = new List<GameObject>();
-            
+
             foreach (var o in models)
             {
-                var m = (GameObject) o;
+                var m = (GameObject)o;
                 var meshes = GetCustomMeshesInObject(m);
                 var assetImporter = AssetImporter.GetAtPath(AssetDatabase.GetAssetPath(m));
-                
-                if (!(assetImporter is ModelImporter modelImporter)) 
+
+                if (!(assetImporter is ModelImporter modelImporter))
                     continue;
-                
+
                 var clips = modelImporter.clipAnimations.Length;
 
                 // Only check if the model has meshes and no clips
                 if (!meshes.Any() || clips != 0)
                     continue;
-                
+
                 Transform[] transforms = m.GetComponentsInChildren<Transform>(true);
-                
+
                 foreach (var t in transforms)
                 {
                     var hasMeshComponent = t.TryGetComponent<MeshFilter>(out _) || t.TryGetComponent<SkinnedMeshRenderer>(out _);
-                    
-                    if (t.localRotation == Quaternion.identity || !hasMeshComponent) 
+
+                    if (t.localRotation == Quaternion.identity || !hasMeshComponent)
                         continue;
-                    
+
                     badModels.Add(m);
                     break;
                 }
@@ -511,7 +576,7 @@ namespace AssetStoreTools.Validator
                 result.AddMessage("All found models are facing the right way!");
                 return result;
             }
-            
+
             result.Result = TestResult.ResultStatus.Warning;
             result.AddMessage("The following models have incorrect rotation", null, badModels.ToArray());
 
@@ -536,7 +601,7 @@ namespace AssetStoreTools.Validator
                 result.AddMessage("No JPG/JPEG textures were found!");
                 return result;
             }
-            
+
             result.Result = TestResult.ResultStatus.Fail;
             result.AddMessage("The following textures are compressed as JPG/JPEG", null, jpgs);
 
@@ -545,9 +610,9 @@ namespace AssetStoreTools.Validator
 
         #endregion
 
-        #region 10_MissingComponentsInAssets
+        #region 9_MissingComponentsInAssets
 
-        public TestResult _10_MissingComponentsInAssets()
+        public TestResult _9_MissingComponentsInAssets()
         {
             TestResult result = new TestResult
             {
@@ -561,7 +626,7 @@ namespace AssetStoreTools.Validator
                 result.AddMessage("No assets have missing components!");
                 return result;
             }
-            
+
             result.Result = TestResult.ResultStatus.Fail;
             result.AddMessage("The following assets contain missing components", null, assets);
 
@@ -571,7 +636,7 @@ namespace AssetStoreTools.Validator
         private GameObject[] GetAllAssetsWithMissingComponents()
         {
             var missingReferenceAssets = new List<GameObject>();
-            var assetPaths = AssetDatabase.GetAllAssetPaths().Where(p => p.StartsWith("Assets"));
+            var assetPaths = AssetDatabase.GetAllAssetPaths().Where(p => p.StartsWith(s_mainFolderPath));
 
             foreach (var path in assetPaths)
             {
@@ -598,9 +663,9 @@ namespace AssetStoreTools.Validator
 
         #endregion
 
-        #region 11_MissingComponentTest
+        #region 10_MissingComponentTest
 
-        public TestResult _11_MissingComponentTest()
+        public TestResult _10_MissingComponentTest()
         {
             TestResult result = new TestResult
             {
@@ -617,7 +682,7 @@ namespace AssetStoreTools.Validator
 
                 if (missingComponentGOs.Count <= 0)
                     continue;
-                
+
                 result.Result = TestResult.ResultStatus.Fail;
                 var message = $"GameObjects with missing components or prefab references found in {scene}.\n\nClick this message to open the Scene and see the affected GameObjects:";
                 result.AddMessage(message, new MessageActionOpenAsset(AssetDatabase.LoadAssetAtPath<SceneAsset>(scene)), missingComponentGOs.ToArray());
@@ -659,13 +724,13 @@ namespace AssetStoreTools.Validator
         {
             var missingComponentGOs = new List<GameObject>();
             var rootComponents = root.GetComponents<Component>();
-            
+
             if (PrefabUtility.GetPrefabInstanceStatus(root) == PrefabInstanceStatus.MissingAsset || rootComponents.Any(c => !c))
             {
                 missingComponentGOs.Add(root);
             }
 
-            foreach(Transform child in root.transform)
+            foreach (Transform child in root.transform)
                 missingComponentGOs.AddRange(GetMissingComponentGOs(child.gameObject));
 
             return missingComponentGOs;
@@ -673,9 +738,9 @@ namespace AssetStoreTools.Validator
 
         #endregion
 
-        #region 12_RemoveJavaScript
+        #region 11_RemoveJavaScript
 
-        public TestResult _12_RemoveJavaScript()
+        public TestResult _11_RemoveJavaScript()
         {
             TestResult result = new TestResult
             {
@@ -689,7 +754,7 @@ namespace AssetStoreTools.Validator
                 result.AddMessage("No UnityScript / JS files were found!");
                 return result;
             }
-            
+
             result.Result = TestResult.ResultStatus.Fail;
             result.AddMessage("The following assets are UnityScript / JS files", null, javascriptObjects);
 
@@ -698,34 +763,74 @@ namespace AssetStoreTools.Validator
 
         #endregion
 
-        #region 13_RemoveLossyAudioFiles
+        #region 12_RemoveLossyAudioFiles
 
-        public TestResult _13_RemoveLossyAudioFiles()
+        public TestResult _12_RemoveLossyAudioFiles()
         {
+            string SanitizeForComparison(Object o)
+            {
+                Regex alphanumericRegex = new Regex("[^a-zA-Z0-9]");
+                string path = AssetDatabase.GetAssetPath(o);
+                path = path.ToLower();
+                
+                int extensionIndex = path.LastIndexOf('.');
+                string extension = path.Substring(extensionIndex + 1);
+                string sanitized = path.Substring(0, extensionIndex);
+                
+                int separatorIndex = sanitized.LastIndexOf('/');
+                sanitized = sanitized.Substring(separatorIndex);
+                sanitized = alphanumericRegex.Replace(sanitized, String.Empty);
+                sanitized = sanitized.Replace(extension, String.Empty);
+                sanitized = sanitized.Trim();
+
+                return sanitized;
+            }
+
+            TestResult GetSuccessResult(TestResult res)
+            {
+                res.AddMessage("No lossy audio files were found!");
+                return res;
+            }
+            
             TestResult result = new TestResult
             {
                 Result = TestResult.ResultStatus.Pass
             };
-            
+
             var lossyAudioObjects = GetObjectsFromAssets(FileType.LossyAudio);
-
             if (lossyAudioObjects.Length == 0)
-            {
-                result.AddMessage("No lossy audio files were found!");
-                return result;
-            }
+                return GetSuccessResult(result);
             
-            result.Result = TestResult.ResultStatus.Fail;
-            result.AddMessage("The following lossy audio files were found", null, lossyAudioObjects);
+            // Try to find and match variants
+            var nonLossyAudioObjects = GetObjectsFromAssets(FileType.NonLossyAudio);
+            HashSet<string> nonLossyPathSet = new HashSet<string>();
+            foreach(var asset in nonLossyAudioObjects)
+            {
+                var path = SanitizeForComparison(asset);
+                nonLossyPathSet.Add(path);
+            }
 
+            List<Object> unmatchedAssets = new List<Object>();
+            foreach (var asset in lossyAudioObjects)
+            {
+                var path = SanitizeForComparison(asset);
+                if(!nonLossyPathSet.Contains(path))
+                    unmatchedAssets.Add(asset);
+            }
+
+            if (unmatchedAssets.Count == 0)
+                return GetSuccessResult(result);
+
+            result.Result = TestResult.ResultStatus.Fail;
+            result.AddMessage("The following lossy audio files were found without identically named non-lossy variants:", null, unmatchedAssets.ToArray()); 
             return result;
         }
 
         #endregion
 
-        #region 14_RemoveVideoFiles
+        #region 13_RemoveVideoFiles
 
-        public TestResult _14_RemoveVideoFiles()
+        public TestResult _13_RemoveVideoFiles()
         {
             TestResult result = new TestResult
             {
@@ -739,7 +844,7 @@ namespace AssetStoreTools.Validator
                 result.AddMessage("No video files were found, looking good!");
                 return result;
             }
-            
+
             result.Result = TestResult.ResultStatus.Fail;
             result.AddMessage("The following video files were found", null, videos);
 
@@ -748,9 +853,9 @@ namespace AssetStoreTools.Validator
 
         #endregion
 
-        #region 15_RemoveExecutableFiles
+        #region 14_RemoveExecutableFiles
 
-        public TestResult _15_RemoveExecutableFiles()
+        public TestResult _14_RemoveExecutableFiles()
         {
             TestResult result = new TestResult
             {
@@ -764,7 +869,7 @@ namespace AssetStoreTools.Validator
                 result.AddMessage("No executable files were found!");
                 return result;
             }
-            
+
             result.Result = TestResult.ResultStatus.Fail;
             result.AddMessage("The following executable files were found", null, executables);
 
@@ -773,9 +878,9 @@ namespace AssetStoreTools.Validator
 
         #endregion
 
-        #region 16_RemoveMixamoFiles
+        #region 15_RemoveMixamoFiles
 
-        public TestResult _16_RemoveMixamoFiles()
+        public TestResult _15_RemoveMixamoFiles()
         {
             TestResult result = new TestResult
             {
@@ -789,7 +894,7 @@ namespace AssetStoreTools.Validator
                 result.AddMessage("No Mixamo files were found!");
                 return result;
             }
-            
+
             result.Result = TestResult.ResultStatus.Fail;
             result.AddMessage("The following Mixamo files were found", null, mixamoFiles);
 
@@ -798,9 +903,9 @@ namespace AssetStoreTools.Validator
 
         #endregion
 
-        #region 18_RemoveSpeedTreeFiles
+        #region 16_RemoveSpeedTreeFiles
 
-        public TestResult _18_RemoveSpeedTreeFiles()
+        public TestResult _16_RemoveSpeedTreeFiles()
         {
             TestResult result = new TestResult
             {
@@ -814,7 +919,7 @@ namespace AssetStoreTools.Validator
                 result.AddMessage("No SpeedTree assets have been found!");
                 return result;
             }
-            
+
             result.Result = TestResult.ResultStatus.Fail;
             result.AddMessage("The following SpeedTree assets have been found", null, speedtreeObjects);
 
@@ -823,57 +928,9 @@ namespace AssetStoreTools.Validator
 
         #endregion
 
-        #region 19_RemoveDuplicateAnimationNames
+        #region 17_CheckLODsOnYourPrefabs
 
-        public TestResult _19_RemoveDuplicateAnimationNames()
-        {
-            TestResult result = new TestResult
-            {
-                Result = TestResult.ResultStatus.Pass
-            };
-
-            var models = GetObjectsFromAssets(FileType.Model);
-            var badModels = new List<UnityEngine.Object>();
-
-            foreach (var m in models)
-            {
-                var animList = new List<ModelImporterClipAnimation>();
-                var assetImporter = AssetImporter.GetAtPath(AssetDatabase.GetAssetPath(m));
-
-                if (!(assetImporter is ModelImporter importer)) 
-                    continue;
-                
-                animList.AddRange(importer.clipAnimations);
-                animList.AddRange(importer.defaultClipAnimations);
-
-                var uniqueAnimations = new HashSet<string>();
-
-                foreach (var anim in animList)
-                {
-                    if (!uniqueAnimations.Add(anim.name))
-                    {
-                        badModels.Add(m);
-                    }
-                }
-            }
-
-            if (badModels.Count <= 0)
-            {
-                result.AddMessage("No duplicate animations were found!");
-                return result;
-            }
-            
-            result.Result = TestResult.ResultStatus.Fail;
-            result.AddMessage("The following objects contain duplicate animations", null, badModels.Distinct().ToArray());
-
-            return result;
-        }
-
-        #endregion
-
-        #region 20_CheckLODsOnYourPrefabs
-
-        public TestResult _20_CheckLODsonyourPrefabs()
+        public TestResult _17_CheckLODsonyourPrefabs()
         {
             TestResult result = new TestResult
             {
@@ -885,7 +942,7 @@ namespace AssetStoreTools.Validator
 
             foreach (var o in prefabs)
             {
-                var p = (GameObject) o;
+                var p = (GameObject)o;
                 var meshFilters = p.GetComponentsInChildren<MeshFilter>();
                 var hasLODGroup = p.TryGetComponent<LODGroup>(out _);
 
@@ -901,7 +958,7 @@ namespace AssetStoreTools.Validator
                 result.AddMessage("All found prefabs are meeting the LOD requirements!");
                 return result;
             }
-            
+
             result.Result = TestResult.ResultStatus.Warning;
             result.AddMessage("The following prefabs do not meet the LOD requirements", null, badPrefabs.ToArray());
 
@@ -910,22 +967,26 @@ namespace AssetStoreTools.Validator
 
         #endregion
 
-        #region 21_ShaderCompilerErrors
+        #region 18_ShaderCompilerErrors
 
-        public TestResult _21_ShaderCompilerErrors()
-		{
+        public TestResult _18_ShaderCompilerErrors()
+        {
             TestResult result = new TestResult
             {
                 Result = TestResult.ResultStatus.Pass
             };
 
             var shaders = GetObjectsFromAssets(FileType.Shader);
-            var badShaders = shaders.Where(s => ShaderHasError(s)).ToArray();
+            var badShaders = shaders.Where(ShaderHasError).ToArray();
 
             if (badShaders.Length > 0)
             {
                 result.Result = TestResult.ResultStatus.Fail;
                 result.AddMessage("The following shader files have errors", null, badShaders);
+            }
+            else
+            {
+                result.AddMessage("All found Shaders have no compilation errors!");
             }
 
             return result;
@@ -933,15 +994,124 @@ namespace AssetStoreTools.Validator
 
         private bool ShaderHasError(UnityEngine.Object obj)
         {
-            if (obj is Shader)
-                return ShaderUtil.ShaderHasError(obj as Shader);
+            switch (obj)
+            {
+                case Shader shader:
+                    return ShaderUtil.ShaderHasError(shader);
+                case ComputeShader shader:
+                    return ShaderUtil.GetComputeShaderMessageCount(shader) > 0;
+                case RayTracingShader shader:
+                    return ShaderUtil.GetRayTracingShaderMessageCount(shader) > 0;
+                default:
+                    return false;
+            }
+        }
 
-            if (obj is ComputeShader)
-                return ShaderUtil.GetComputeShaderMessageCount(obj as ComputeShader) > 0;
+        #endregion
 
-            if (obj is UnityEngine.Experimental.Rendering.RayTracingShader)
-                return ShaderUtil.GetRayTracingShaderMessageCount(obj as UnityEngine.Experimental.Rendering.RayTracingShader) > 0;
+        #region 19_TypesHaveNamespaces
 
+        public TestResult _19_TypesHaveNamespaces()
+        {
+            TestResult result = new TestResult();
+
+            var scripts = GetObjectsFromAssets(FileType.MonoScript).Select(x => x as MonoScript).ToList();
+            var affectedScripts = NamespaceUtility.GetTypesWithoutNamespacesFromScripts(scripts);
+
+            var dlls = GetObjectsFromAssets(FileType.PrecompiledAssembly).ToList();
+            var affectedDlls = NamespaceUtility.GetTypesWithoutNamespacesFromAssemblies(dlls);
+
+            if (affectedScripts.Count > 0 || affectedDlls.Count > 0)
+            {
+                if (affectedScripts.Count > 0)
+                {
+                    result.Result = TestResult.ResultStatus.Warning;
+                    var objects = affectedScripts.Keys.ToArray();
+                    result.AddMessage("The following scripts contain types (classes, interfaces, structs or enums) not nested in a namespace:");
+                    foreach (var kvp in affectedScripts)
+                    {
+                        var message = string.Empty;
+                        foreach (var type in kvp.Value)
+                            message += type + "\n";
+
+                        message = message.Remove(message.Length - "\n".Length);
+                        result.AddMessage(message, null, kvp.Key);
+                    }
+                }
+
+                if (affectedDlls.Count > 0)
+                {
+                    result.Result = TestResult.ResultStatus.Warning;
+                    result.AddMessage("The following precompiled assemblies contain types not nested in a namespace:");
+                    foreach (var kvp in affectedDlls)
+                    {
+                        var message = string.Empty;
+                        foreach (var type in kvp.Value)
+                            message += type + "\n";
+
+                        message = message.Remove(message.Length - "\n".Length);
+                        result.AddMessage(message, null, kvp.Key);
+                    }
+                }
+            }
+            else
+                result.Result = TestResult.ResultStatus.Pass;
+
+            return result;
+        }
+
+        #endregion
+
+        #region 20_ConsistentLineEndings
+
+        public TestResult _20_ConsistentLineEndings()
+        {
+            TestResult result = new TestResult();
+
+            var scripts = GetObjectsFromAssets(FileType.MonoScript).Select(x => x as MonoScript).ToArray();
+
+            var affectedScripts = new ConcurrentBag<Object>();
+            var scriptContents = new ConcurrentDictionary<MonoScript, string>();
+
+            // A separate dictionary is needed because MonoScript contents cannot be accessed outside of the main thread
+            foreach (var s in scripts)
+                if(s != null)
+                    scriptContents.TryAdd(s, s.text);
+
+            Parallel.ForEach(scriptContents, (s) =>
+            {
+               if(HasInconsistentLineEndings(s.Value))
+                    affectedScripts.Add(s.Key);
+            });
+
+            if (affectedScripts.Count > 0)
+            {
+                result.Result = TestResult.ResultStatus.Warning;
+                result.AddMessage("The following scripts have inconsistent line endings:", null, affectedScripts.ToArray());
+            }
+            else
+                result.Result = TestResult.ResultStatus.Pass;
+
+            return result;
+        }
+
+        private bool HasInconsistentLineEndings(string text)
+        {
+            int crlfEndings = 0;
+            int lfEndings = 0;
+
+            var split = text.Split(new[] { "\n" }, StringSplitOptions.None);
+            for (int i = 0; i < split.Length; i++)
+            {
+                var line = split[i];
+                if (line.EndsWith("\r"))
+                    crlfEndings++;
+                else if (i != split.Length - 1)
+                    lfEndings++;
+            }
+
+            if (crlfEndings > 0 && lfEndings > 0)
+                return true;
             return false;
         }
 

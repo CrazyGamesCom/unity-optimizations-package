@@ -9,7 +9,7 @@ using UnityEngine;
 namespace AssetStoreTools.Utility
 {
     [InitializeOnLoad]
-    public class LegacyToolsRemover
+    internal class LegacyToolsRemover
     {
         private const string MessagePart1 = "A legacy version of Asset Store Tools " +
             "was detected at the following path:\n";

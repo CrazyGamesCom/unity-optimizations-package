@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -7,20 +7,21 @@ using UnityEngine;
 namespace AssetStoreTools.Validator
 {
     [Serializable]
-    public class ValidationStateData
+    internal class ValidationStateData
     {
         public string SerializedMainPath;
+        public string SerializedCategory;
         public List<int> SerializedKeys;
         public List<TestResultData> SerializedValues;
     }
         
     [Serializable]
-    public class TestResultData
+    internal class TestResultData
     {
         public TestResult Result;
     }
-    
-    public class ValidationState
+
+    internal class ValidationState
     {
         private const string ValidationDataFilename = "AssetStoreValidationState.asset";
         private const string PersistentDataLocation = "Library";
@@ -54,7 +55,8 @@ namespace AssetStoreTools.Validator
             {
                 s_instance.ValidationStateData = new ValidationStateData
                 {
-                    SerializedMainPath = "Assets"
+                    SerializedMainPath = "Assets",
+                    SerializedCategory = ""
                 };
                 return;
             }
@@ -102,6 +104,11 @@ namespace AssetStoreTools.Validator
         public void SetMainPath(string path)
         {
             s_instance.ValidationStateData.SerializedMainPath = path;
+        }
+
+        public void SetCategory(string category)
+        {
+            s_instance.ValidationStateData.SerializedCategory = category;
         }
         
     }

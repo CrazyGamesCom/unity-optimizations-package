@@ -18,3 +18,17 @@ MonoBehaviour:
   Description: Prefabs cannot be empty, please make sure that you set up your prefabs
     correctly.
   TestMethodName: _5_EmptyPrefab
+  ErrorCategory:
+    Filter:
+    - 3D
+    - 2D
+    - VFX
+    - Animation
+    - Essentials
+    - Templates
+    FilterIsInclusive: 1
+    AppliesToSubCategories: 1
+  WarningCategory:
+    Filter: []
+    FilterIsInclusive: 0
+    AppliesToSubCategories: 1

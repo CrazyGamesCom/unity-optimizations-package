@@ -3,7 +3,7 @@ using System.Threading;
 
 namespace AssetStoreTools.Uploader
 {
-    public class OngoingUpload : IDisposable
+    internal class OngoingUpload : IDisposable
     {
         private CancellationTokenSource _cancellationTokenSource;
 

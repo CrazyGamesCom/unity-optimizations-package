@@ -7,7 +7,7 @@ using Object = UnityEngine.Object;
 namespace AssetStoreTools.Validator
 {
     [Serializable]
-    public struct TestResult
+    internal struct TestResult
     {
         public ResultStatus Result;
 
@@ -55,7 +55,7 @@ namespace AssetStoreTools.Validator
         }
 
         [Serializable]
-        public class TestResultMessage : ISerializationCallbackReceiver
+        internal class TestResultMessage : ISerializationCallbackReceiver
         {
             [SerializeField, HideInInspector]
             private string Text;

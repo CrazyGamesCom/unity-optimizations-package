@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using AssetStoreTools.Utility;
 using AssetStoreTools.Utility.Json;
@@ -10,7 +11,7 @@ using UnityEngine.UIElements;
 
 namespace AssetStoreTools.Uploader
 {
-    public class FolderUploadWorkflowView : UploadWorkflowView
+    internal class FolderUploadWorkflowView : UploadWorkflowView
     {
         public const string WorkflowName = "FolderWorkflow";
         public const string WorkflowDisplayName = "From Assets Folder";
@@ -19,27 +20,34 @@ namespace AssetStoreTools.Uploader
         public override string DisplayName => WorkflowDisplayName;
 
         private Toggle _dependenciesToggle;
+        private List<string> _includedDependencies = new List<string>();
+
         private bool _isCompleteProject;
+        private string _category;
 
         private ValidationElement _validationElement;
         private VisualElement _specialFoldersElement;
+        private VisualElement _packageDependencyBox;
 
         // Special folders that would not work if not placed directly in the 'Assets' folder
         private readonly string[] _extraAssetFolderNames =
         {
             "Editor Default Resources", "Gizmos", "Plugins",
-            "StreamingAssets", "Standard Assets", "WebGLTemplates"
+            "StreamingAssets", "Standard Assets", "WebGLTemplates",
+            "ExternalDependencyManager"
         };
 
-        private FolderUploadWorkflowView(bool isCompleteProject, Action serializeSelection) : base(serializeSelection)
+        private FolderUploadWorkflowView(string category, bool isCompleteProject, Action serializeSelection) : base(serializeSelection)
         {
             _isCompleteProject = isCompleteProject;
+            _category = category;
+            
             SetupWorkflow();
         }
 
-        public static FolderUploadWorkflowView Create(bool isCompleteProject, Action serializeAction)
+        public static FolderUploadWorkflowView Create(string category, bool isCompleteProject, Action serializeAction)
         {
-            return new FolderUploadWorkflowView(isCompleteProject, serializeAction);
+            return new FolderUploadWorkflowView(category, isCompleteProject, serializeAction);
         }
 
         public void SetCompleteProject(bool isCompleteProject)
@@ -47,11 +55,16 @@ namespace AssetStoreTools.Uploader
             _isCompleteProject = isCompleteProject;
         }
 
-        public bool GetIncludeDependencies()
+        private bool GetIncludeDependenciesToggle()
         {
             return _dependenciesToggle.value;
         }
 
+        private List<string> GetIncludedDependencies()
+        {
+            return _includedDependencies;
+        }
+        
         protected sealed override void SetupWorkflow()
         {
             // Path selection
@@ -102,7 +115,17 @@ namespace AssetStoreTools.Uploader
 
             _dependenciesToggle = new Toggle { name = "DependenciesToggle", text = "Include Package Manifest" };
             _dependenciesToggle.AddToClassList("dependencies-toggle");
-            _dependenciesToggle.RegisterValueChangedCallback((_) => _serializeSelection?.Invoke());
+            
+            _dependenciesToggle.RegisterValueChangedCallback((_) => SerializeSelection?.Invoke());
+            _dependenciesToggle.RegisterValueChangedCallback(OnDependencyToggleValueChange);
+            
+            RegisterCallback<AttachToPanelEvent>((_) => {ASToolsPreferences.OnSettingsChange += OnASTSettingsChange;});
+            RegisterCallback<DetachFromPanelEvent>((_) => {ASToolsPreferences.OnSettingsChange -= OnASTSettingsChange;});
+            
+            // Dependencies selection
+            _packageDependencyBox = new VisualElement();
+            _packageDependencyBox.AddToClassList("selection-box-row");
+            _packageDependencyBox.style.display = DisplayStyle.None;
 
             dependenciesLabelHelpRow.Add(dependenciesLabel);
             dependenciesLabelHelpRow.Add(dependenciesLabelTooltip);
@@ -111,22 +134,26 @@ namespace AssetStoreTools.Uploader
             dependenciesSelectionRow.Add(_dependenciesToggle);
 
             Add(dependenciesSelectionRow);
+            Add(_packageDependencyBox);
 
             _validationElement = new ValidationElement();
             Add(_validationElement);
+            
+            _validationElement.SetCategory(_category);
         }
 
         public override JsonValue SerializeWorkflow()
         {
             var workflowDict = base.SerializeWorkflow();
-            workflowDict["dependencies"] = GetIncludeDependencies();
+            workflowDict["dependencies"] = GetIncludeDependenciesToggle();
+            workflowDict["dependenciesNames"] = GetIncludedDependencies().Select(JsonValue.NewString).ToList();
 
             return workflowDict;
         }
 
         public override void LoadSerializedWorkflow(JsonValue json, string lastUploadedPath, string lastUploadedGuid)
         {
-            if(!DeserializeMainExportPath(json, out string mainExportPath) || !Directory.Exists(mainExportPath))
+            if (!DeserializeMainExportPath(json, out string mainExportPath) || (!Directory.Exists(mainExportPath) && mainExportPath != String.Empty))
             {
                 ASDebug.Log("Unable to restore Folder upload workflow paths from the local cache");
                 LoadSerializedWorkflowFallback(lastUploadedPath, lastUploadedGuid);
@@ -134,12 +161,17 @@ namespace AssetStoreTools.Uploader
             }
 
             DeserializeExtraExportPaths(json, out List<string> extraExportPaths);
-
-            var dependenciesToggle = json["dependencies"].AsBool();
+            DeserializeDependencies(json, out List<string> dependencies);
+            DeserializeDependenciesToggle(json, out var dependenciesToggle);
 
             ASDebug.Log($"Restoring serialized Folder workflow values from local cache");
-            HandleFolderUploadPathSelection(mainExportPath, extraExportPaths, false);
-            _dependenciesToggle.SetValueWithoutNotify(dependenciesToggle);
+            HandleFolderUploadPathSelection(mainExportPath, extraExportPaths, dependencies, false);
+            
+            if (dependenciesToggle)
+            {
+                _dependenciesToggle.SetValueWithoutNotify(true);
+                FindAndPopulateDependencies(_includedDependencies);
+            }
         }
 
         public override void LoadSerializedWorkflowFallback(string lastUploadedPath, string lastUploadedGuid)
@@ -155,7 +187,7 @@ namespace AssetStoreTools.Uploader
             }
 
             ASDebug.Log($"Restoring serialized Folder workflow values from previous upload values");
-            HandleFolderUploadPathSelection(mainExportPath, null, false);
+            HandleFolderUploadPathSelection(mainExportPath, null, null, false);
         }
 
         #region Folder Upload
@@ -210,15 +242,17 @@ namespace AssetStoreTools.Uploader
                 return;
             }
 
-            HandleFolderUploadPathSelection(relativeExportPath, null, true);
+            HandleFolderUploadPathSelection(relativeExportPath, null, _includedDependencies, true);
         }
 
-        private void HandleFolderUploadPathSelection(string relativeExportPath, List<string> serializedToggles, bool serializeValues)
+        private void HandleFolderUploadPathSelection(string relativeExportPath, List<string> serializedToggles, List<string> dependencies, bool serializeValues)
         {
-            PathSelectionField.value = relativeExportPath + "/";
+            if (relativeExportPath != String.Empty)
+                PathSelectionField.value = relativeExportPath + "/";
 
             MainExportPath = relativeExportPath;
             ExtraExportPaths = new List<string>();
+            _includedDependencies = new List<string>();
 
             LocalPackageGuid = AssetDatabase.AssetPathToGUID(MainExportPath);
             LocalPackagePath = MainExportPath;
@@ -254,10 +288,13 @@ namespace AssetStoreTools.Uploader
 
             if (specialFoldersFound.Count != 0)
                 PopulateExtraPathsBox(specialFoldersFound, serializedToggles);
+            
+            if (dependencies != null && dependencies.Count != 0)
+                FindAndPopulateDependencies(dependencies);
 
             // Only serialize current selection when no serialized toggles were passed
             if (serializeValues)
-                _serializeSelection?.Invoke();
+                SerializeSelection?.Invoke();
         }
 
         private void PopulateExtraPathsBox(List<string> specialFoldersFound, List<string> checkedToggles)
@@ -316,16 +353,115 @@ namespace AssetStoreTools.Uploader
                     break;
             }
 
-            _serializeSelection?.Invoke();
+            SerializeSelection?.Invoke();
+        }
+        
+        private void OnToggleDependency(ChangeEvent<bool> evt, string dependency)
+        {
+            switch (evt.newValue)
+            {
+                case true when !_includedDependencies.Contains(dependency):
+                    _includedDependencies.Add(dependency);
+                    break;
+                case false when _includedDependencies.Contains(dependency):
+                    _includedDependencies.Remove(dependency);
+                    break;
+            }
+
+            SerializeSelection?.Invoke();
         }
 
-        public override async Task<PackageExporter.ExportResult> ExportPackage(bool isCompleteProject)
+        private void OnDependencyToggleValueChange(ChangeEvent<bool> evt)
+        {
+            CheckDependencyBoxState();
+        }
+
+        private void OnASTSettingsChange()
+        {
+            CheckDependencyBoxState();
+        }
+
+        private void CheckDependencyBoxState()
+        {
+            if (_dependenciesToggle.value && !ASToolsPreferences.Instance.UseLegacyExporting)
+            {
+                FindAndPopulateDependencies(_includedDependencies);
+            }
+            else
+            {
+                _packageDependencyBox.style.display = DisplayStyle.None;
+            }
+        }
+
+        private void FindAndPopulateDependencies(List<string> checkedToggles)
+        {
+            _packageDependencyBox?.Clear();
+            var registryPackages = PackageUtility.GetAllRegistryPackages();
+
+            if (registryPackages == null)
+            {
+                ASDebug.LogWarning("Package Manifest was not found or could not be parsed.");
+                return;
+            }
+
+            List<string> packagesFound = new List<string>(registryPackages.Select(x => x.name));
+            PopulatePackagesSelectionBox(packagesFound, checkedToggles);
+        }
+        
+        private void PopulatePackagesSelectionBox(List<string> packagesFound, List<string> checkedToggles)
+        {
+            VisualElement dependenciesHelpRow = new VisualElement();
+            dependenciesHelpRow.AddToClassList("label-help-row");
+
+            Label allPackagesLabel = new Label { text = "All Packages" };
+            Image allPackagesLabelTooltip = new Image
+            {
+                tooltip =
+                    "Select UPM dependencies you would like to include with your package."
+            };
+
+            VisualElement packagesTogglesBox = new ScrollView { name = "DependencyToggles" };
+            packagesTogglesBox.AddToClassList("extra-packages-scroll-view");
+
+            dependenciesHelpRow.Add(allPackagesLabel);
+            dependenciesHelpRow.Add(allPackagesLabelTooltip);
+
+            _packageDependencyBox.Add(dependenciesHelpRow);
+            _packageDependencyBox.Add(packagesTogglesBox);
+
+            EventCallback<ChangeEvent<bool>, string> toggleChangeCallback = OnToggleDependency;
+            foreach (var path in packagesFound)
+            {
+                var toggle = new Toggle { value = false, text = path };
+                toggle.AddToClassList("extra-packages-toggle");
+                if (checkedToggles != null && checkedToggles.Contains(toggle.text))
+                {
+                    toggle.SetValueWithoutNotify(true);
+                    
+                    if (!_includedDependencies.Contains(toggle.text))
+                        _includedDependencies.Add(toggle.text);
+                }
+
+                toggle.RegisterCallback(toggleChangeCallback, toggle.text);
+                packagesTogglesBox.Add(toggle);
+            }
+
+            if (!ASToolsPreferences.Instance.UseLegacyExporting)
+                _packageDependencyBox.style.display = DisplayStyle.Flex;
+        }
+
+        public override async Task<PackageExporter.ExportResult> ExportPackage(string packageName, bool isCompleteProject)
         {
             var paths = GetAllExportPaths();
-            var includeDependencies = GetIncludeDependencies();
-            var outputPath = $"{FileUtil.GetUniqueTempPathInProject()}-{Name}.unitypackage";
+            var includeDependencies = GetIncludeDependenciesToggle();
+            var outputPath = $"Temp/{packageName}-{DateTime.Now:yyyy-dd-M--HH-mm-ss}.unitypackage";
 
-            return await PackageExporter.ExportPackage(paths, outputPath, includeDependencies, isCompleteProject, ASToolsPreferences.Instance.UseCustomExporting);
+            var dependenciesToInclude = Array.Empty<string>();
+
+            if (includeDependencies)
+                dependenciesToInclude = GetIncludedDependencies().ToArray();
+            
+            return await PackageExporter.ExportPackage(paths, outputPath, includeDependencies, isCompleteProject, ASToolsPreferences.Instance.UseLegacyExporting, dependenciesToInclude);
         }
 
         #endregion

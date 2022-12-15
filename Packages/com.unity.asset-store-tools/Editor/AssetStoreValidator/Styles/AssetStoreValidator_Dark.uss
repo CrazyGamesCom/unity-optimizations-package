@@ -39,6 +39,27 @@
     color: rgb(68, 93, 229);
 }
 
+.label-help-row > Image
+{
+    --unity-image: resource("d__Help@2x");
+}
+
+.category-menu
+{
+    color: rgb(238, 238, 238);
+
+    border-width: 1px;
+    border-radius: 3px;
+    border-color: rgb(36, 36, 36);
+
+    background-color: rgb(88, 88, 88);
+}
+
+.category-menu:hover
+{
+    background-color: rgb(103, 103, 103);
+}
+
 .group-expander-box
 {
     border-width: 0;
@@ -89,6 +110,14 @@
 .test-expanded-box
 {
     background-color: rgb(68, 68, 68);
+}
+
+.test-description > .unity-base-field__input
+{
+    border-width: 0;
+    border-color: rgba(0, 0, 0, 0);
+
+    background-color: rgba(0, 0, 0, 0);
 }
 
 .result-messages-box

@@ -9,7 +9,7 @@ using UnityEngine.UIElements;
 
 namespace AssetStoreTools.Uploader
 {
-    public class AssetStoreUploader : AssetStoreToolsWindow
+    internal class AssetStoreUploader : AssetStoreToolsWindow
     {
         public const string MinRequiredPackageVersion = "2020.3";
 
