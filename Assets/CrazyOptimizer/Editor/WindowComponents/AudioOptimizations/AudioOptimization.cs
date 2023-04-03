@@ -50,17 +50,15 @@ namespace CrazyGames.WindowComponents.AudioOptimizations
             EditorGUILayout.EndHorizontal();
             EditorGUILayout.Space(5);
 
-            // GUILayout.Label(
-            //     "This utility gives you an overview of the textures used in your project. By optimizing various settings, you will be able to considerably decrease your final build size. You can click on a texture to select it in the Project view. To find out more about how the tool finds the textures, please check our GitHub repo.",
-            //     EditorStyles.wordWrappedLabel);
-            //
-            //
-            // BuildExplanation("Max size",
-            //     "Decrease the max size as much as possible while the texture still looks good in game. You most likely don't need the default 2048 set by Unity.");
-            // BuildExplanation("Compression", "Lower quality will decrease the final build size.");
-            // BuildExplanation("Crunch compression",
-            //     "All the textures with crunch compression enabled will be compressed together, decreasing the final build size.");
-            // BuildExplanation("Crunch comp. quality", "A higher compression quality means larger textures and longer compression times.");
+            GUILayout.Label(
+                "This utility gives you an overview of the audio clips used in your project. By optimizing various settings, you will be able to considerably decrease your final build size and runtime memory usage. You can click on an audio clip to select it in the Project view. To find out more about how the tool finds the audio clips, please check our GitHub repo.",
+                EditorStyles.wordWrappedLabel);
+
+
+            BuildExplanation("Load type",
+                "The default option, Decompress On Load, is good for audio clips that require precision when played, for example, audio effects or dialogues. For background audio clips Compressed In Memory is recommended, since it reduces the runtime memory, though audio playback is less precise and may introduce latency.");
+            BuildExplanation("Quality",
+                "Lowering the quality will reduce the build size. You can experiment with a lower audio quality for background audio.");
         }
 
         static void BuildExplanation(string label, string explanation)
@@ -181,15 +179,11 @@ namespace CrazyGames.WindowComponents.AudioOptimizations
                 _multiColumnHeaderState = new MultiColumnHeaderState(new[]
                 {
                     // when adding a new column don't forget to check the sorting method, and the CellGUI method
-                    new MultiColumnHeaderState.Column() { headerContent = new GUIContent() { text = "Audio clip" }, width = 150, minWidth = 150, canSort = true },
-                    // new MultiColumnHeaderState.Column() { headerContent = new GUIContent() { text = "Type" }, width = 60, minWidth = 60, canSort = true },
-                    // new MultiColumnHeaderState.Column() { headerContent = new GUIContent() { text = "Max size" }, width = 60, minWidth = 60, canSort = true },
-                    // new MultiColumnHeaderState.Column()
-                    //     { headerContent = new GUIContent() { text = "Compression" }, width = 80, minWidth = 80, canSort = true },
-                    // new MultiColumnHeaderState.Column()
-                    //     { headerContent = new GUIContent() { text = "Crunch compression" }, width = 120, minWidth = 120, canSort = true },
-                    // new MultiColumnHeaderState.Column()
-                    //     { headerContent = new GUIContent() { text = "Crunch comp. quality" }, width = 128, minWidth = 128, canSort = true },
+                    new MultiColumnHeaderState.Column()
+                        { headerContent = new GUIContent() { text = "Audio clip" }, width = 150, minWidth = 150, canSort = true },
+                    new MultiColumnHeaderState.Column()
+                        { headerContent = new GUIContent() { text = "Load type" }, width = 150, minWidth = 150, canSort = true },
+                    new MultiColumnHeaderState.Column() { headerContent = new GUIContent() { text = "Quality" }, width = 60, minWidth = 60, canSort = true },
                 });
             _audioCompressionTree = new AudioTree(treeViewState, new MultiColumnHeader(_multiColumnHeaderState), treeModel);
             _isAnalyzing = false;

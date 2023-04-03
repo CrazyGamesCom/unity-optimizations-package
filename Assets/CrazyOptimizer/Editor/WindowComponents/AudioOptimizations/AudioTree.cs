@@ -43,21 +43,12 @@ namespace CrazyGames.WindowComponents.AudioOptimizations
                 case 0:
                     items = items.Order(i => i.data.AudioName, ascending);
                     break;
-                // case 1:
-                //     items = items.Order(i => i.data.TextureType, ascending);
-                //     break;
-                // case 2:
-                //     items = items.Order(i => i.data.TextureMaxSize, ascending);
-                //     break;
-                // case 3:
-                //     items = items.Order(i => i.data.TextureCompressionName, ascending);
-                //     break;
-                // case 4:
-                //     items = items.Order(i => i.data.CrunchCompressionQuality, ascending);
-                //     break;
-                // case 5:
-                //     items = items.Order(i => i.data.CrunchCompressionQuality, ascending);
-                //     break;
+                case 1:
+                    items = items.Order(i => i.data.LoadType, ascending);
+                    break;
+                case 2:
+                    items = items.Order(i => i.data.Quality, ascending);
+                    break;
             }
 
             rootItem.children = items.Cast<TreeViewItem>().ToList();
@@ -111,7 +102,7 @@ namespace CrazyGames.WindowComponents.AudioOptimizations
 
         protected override void RowGUI(RowGUIArgs args)
         {
-            var item = (TreeViewItem<AudioTreeItem>) args.item;
+            var item = (TreeViewItem<AudioTreeItem>)args.item;
 
             for (int i = 0; i < args.GetNumVisibleColumns(); ++i)
             {
@@ -127,21 +118,12 @@ namespace CrazyGames.WindowComponents.AudioOptimizations
                 case 0:
                     GUI.Label(cellRect, item.data.AudioName);
                     break;
-                // case 1:
-                //     GUI.Label(cellRect, item.data.TextureType.ToString());
-                //     break;
-                // case 2:
-                //     GUI.Label(cellRect, item.data.TextureMaxSize.ToString());
-                //     break;
-                // case 3:
-                //     GUI.Label(cellRect, item.data.TextureCompressionName);
-                //     break;
-                // case 4:
-                //     GUI.Label(cellRect, item.data.HasCrunchCompression ? "yes" : "no");
-                //     break;
-                // case 5:
-                //     GUI.Label(cellRect, item.data.CrunchCompressionQuality.ToString());
-                //     break;
+                case 1:
+                    GUI.Label(cellRect, item.data.LoadType);
+                    break;
+                case 2:
+                    GUI.Label(cellRect, item.data.Quality.ToString());
+                    break;
             }
         }
 

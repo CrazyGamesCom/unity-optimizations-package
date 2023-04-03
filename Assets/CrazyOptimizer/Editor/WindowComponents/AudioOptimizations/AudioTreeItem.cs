@@ -2,6 +2,7 @@
 using System;
 using System.IO;
 using UnityEditor;
+using UnityEngine;
 
 namespace CrazyGames.WindowComponents.AudioOptimizations
 {
@@ -10,32 +11,25 @@ namespace CrazyGames.WindowComponents.AudioOptimizations
         public string AudioPath { get; }
         public string AudioName { get; }
 
-        // public int TextureMaxSize => _platformSettings.maxTextureSize;
-        // public int CrunchCompressionQuality => _platformSettings.compressionQuality;
-        // public bool HasCrunchCompression => _audioImporter.crunchedCompression;
-        // public TextureImporterFormat TextureFormat => _platformSettings.format;
-        // public TextureImporterType TextureType => _audioImporter.textureType;
-        // public TextureImporterCompression TextureCompression => _audioImporter.textureCompression;
-        //
-        // public string TextureCompressionName
-        // {
-        //     get
-        //     {
-        //         switch (TextureCompression)
-        //         {
-        //             case TextureImporterCompression.Uncompressed:
-        //                 return "Uncompressed";
-        //             case TextureImporterCompression.Compressed:
-        //                 return "Normal";
-        //             case TextureImporterCompression.CompressedHQ:
-        //                 return "High";
-        //             case TextureImporterCompression.CompressedLQ:
-        //                 return "Low";
-        //             default:
-        //                 throw new ArgumentOutOfRangeException();
-        //         }
-        //     }
-        // }
+        public string LoadType
+        {
+            get
+            {
+                switch (_platformSettings.loadType)
+                {
+                    case AudioClipLoadType.DecompressOnLoad:
+                        return "Decompress on load";
+                    case AudioClipLoadType.CompressedInMemory:
+                        return "Compressed in memory";
+                    case AudioClipLoadType.Streaming:
+                        return "Streaming";
+                    default:
+                        throw new ArgumentOutOfRangeException();
+                }
+            }
+        }
+
+        public int Quality => Mathf.RoundToInt(_platformSettings.quality * 100);
 
         private readonly AudioImporter _audioImporter;
         private readonly AudioImporterSampleSettings _platformSettings;
