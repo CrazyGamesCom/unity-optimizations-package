@@ -75,23 +75,6 @@ namespace CrazyGames.WindowComponents.TextureOptimizations
         }
 
         /**
-         * Find the paths of the scenes that will end up in the final build of the game.
-         */
-        static List<string> GetScenesInBuildPath()
-        {
-            var scenesInBuild = new List<string>();
-            foreach (var scene in EditorBuildSettings.scenes)
-            {
-                if (scene.enabled)
-                {
-                    scenesInBuild.Add(scene.path);
-                }
-            }
-
-            return scenesInBuild;
-        }
-
-        /**
          * Find recursively the textures on which this scene depends.
          */
         static List<string> GetSceneTextureDependencies(string scenePath)
@@ -113,7 +96,7 @@ namespace CrazyGames.WindowComponents.TextureOptimizations
         {
             var usedTexturePaths = new HashSet<string>();
 
-            var scenesInBuild = GetScenesInBuildPath();
+            var scenesInBuild = OptimizerUtils.GetScenesInBuildPath();
             foreach (var scenePath in scenesInBuild)
             {
                 var texturesUsedInScene = GetSceneTextureDependencies(scenePath);
