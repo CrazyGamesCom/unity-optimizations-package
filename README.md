@@ -40,6 +40,13 @@ The model optimizations tool works very similar to the texture optimizations too
 
 ![Model optimizations](Docs/models.png?raw=true "Model optimizations")
 
+## Audio clip optimizations
+
+The audio clip optimizations tool works very similar to the texture optimizations tool, but instead of textures it finds audio clips in your project and provides various tips about optimizing them.
+
+![Audio optimizations](Docs/audio.png?raw=true "Audio optimizations")
+
+
 ## Build logs analyzer
 
 The build logs analyzer parses the Editor.log file to extract the list of files included in your build and the space they occupy. You can use this utility to furthermore analyze the files included in your project.
