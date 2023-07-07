@@ -244,6 +244,15 @@ namespace AssetStoreTools.Uploader
             {
                 var originalAssetPath = pair.Key;
                 var outputAssetPath = $"{tempOutputPath}/{pair.Value}";
+
+                if (Directory.Exists(outputAssetPath))
+                {
+                    var path1 = File.ReadAllText($"{outputAssetPath}/pathname");
+                    var path2 = originalAssetPath;
+                    throw new InvalidOperationException($"Multiple assets with guid {pair.Value} have been detected " +
+                        $"when exporting the package. Please resolve the guid conflicts and try again:\n{path1}\n{path2}");
+                }
+
                 Directory.CreateDirectory(outputAssetPath);
 
                 // Every exported asset has a pathname file

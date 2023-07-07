@@ -15,10 +15,13 @@ MonoBehaviour:
   HasBeenInitialized: 1
   Id: 17
   Title: LOD setup
-  Description: "We do not allow prefabs that contain a mesh with LOD written in\r
-    its name, but without an LOD element or more than 1 mesh attached. Please\r make
-    sure that LODs are correctly set up in the prefab. Refer to the LODGroup\r Manual
-    to set up your LODs."
+  Description: 'Prefabs containing meshes with ''LOD'' in their name must meet the
+    following requirements:
+
+    - LOD Mesh must be referenced by an LOD Group Component
+
+    -
+    LOD Mesh GameObject must be a child of an LOD Group Component'
   TestMethodName: _17_CheckLODsonyourPrefabs
   ErrorCategory:
     Filter:

@@ -72,7 +72,7 @@
     margin-right: 0;
 }
 
-.scan-label, .upload-package-label
+.validator-description
 {
     white-space: normal;
     margin-bottom: 10px;
