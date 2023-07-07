@@ -167,7 +167,7 @@ namespace CrazyGames.WindowComponents.AudioOptimizations
                     var audioImporter = (AudioImporter)AssetImporter.GetAtPath(audioPath);
                     treeElements.Add(new AudioTreeItem("AudioClip", 0, idIncrement, audioPath, audioImporter));
                 }
-                catch (Exception e)
+                catch (Exception)
                 {
                     Debug.LogWarning("Failed to analyze audio clip at path: " + audioPath);
                 }

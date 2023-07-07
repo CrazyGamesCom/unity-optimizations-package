@@ -238,6 +238,7 @@ namespace AssetStoreTools.Validator
                 test.Run();
             }
 
+            EditorUtility.UnloadUnusedAssetsImmediate();
             EditorUtility.ClearProgressBar();
 
             _validateButton.SetEnabled(true);

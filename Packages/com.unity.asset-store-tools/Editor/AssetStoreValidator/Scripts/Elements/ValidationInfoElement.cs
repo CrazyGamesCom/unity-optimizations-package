@@ -17,20 +17,16 @@ namespace AssetStoreTools.Validator
         {
             AddToClassList("validation-info-box");
             
-            var scanLabel = new Label
+            var validatorDescription = new Label
             {
-                text = "Validate your package to ensure content meets a consistent 'Product Content' standard. " +
-                       "Passing this scan does not guarantee that your package will get accepted as the final " +
-                       "decision is made by the Unity Asset Store team."
+                text = "Validate your package to ensure your content follows the chosen submission guidelines. " +
+                "The validations below do not cover all of the content standards, and passing all validations does not " +
+                "guarantee that your package will be accepted to the Asset Store.\n\n" +
+                "The tests are not obligatory for submitting your assets, but they can help avoid instant rejection by the " +
+                "automated vetting system, or clarify reasons of rejection communicated by the vetting team.\n\n" +
+                "For more information about the validations, view the message by expanding the tests or contact our support team."
             };
-            scanLabel.AddToClassList("scan-label");
-
-            var uploadPackageLabel = new Label
-            {
-                text = "The tests are not obligatory for submitting your assets, but they will help to avoid instant rejections. " +
-                       "For more information, view the message next to the test in the checklist or contact our support team."
-            };
-            uploadPackageLabel.AddToClassList("upload-package-label");
+            validatorDescription.AddToClassList("validator-description");
 
             var submissionGuidelinesButton = new Button(() => OpenURL(GuidelinesUrl))
             {
@@ -48,8 +44,7 @@ namespace AssetStoreTools.Validator
             
             supportTicketButton.AddToClassList("hyperlink-button");
 
-            Add(scanLabel);
-            Add(uploadPackageLabel);
+            Add(validatorDescription);
             Add(submissionGuidelinesButton);
             Add(supportTicketButton);
         }

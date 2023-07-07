@@ -19,11 +19,11 @@ namespace AssetStoreTools.Uploader
     /// </summary>
     internal static class AssetStoreAPI
     {
-        public const string ToolVersion = "V6.2.0";
+        public const string ToolVersion = "V6.2.2";
         private const string UnauthSessionId = "26c4202eb475d02864b40827dfff11a14657aa41";
         private const string KharmaSessionId = "kharma.sessionid";
         private const int UploadResponseTimeoutMs = 10000;
-        
+
         public static string AssetStoreProdUrl = "https://kharma.unity3d.com";
         private static string s_sessionId = EditorPrefs.GetString(KharmaSessionId);
         private static HttpClient httpClient = new HttpClient();
@@ -36,6 +36,9 @@ namespace AssetStoreTools.Uploader
             {
                 s_sessionId = value;
                 EditorPrefs.SetString(KharmaSessionId, value);
+                httpClient.DefaultRequestHeaders.Clear();
+                if (!string.IsNullOrEmpty(value))
+                    httpClient.DefaultRequestHeaders.Add("X-Unity-Session", SavedSessionId);
             }
         }
 
@@ -164,7 +167,7 @@ namespace AssetStoreTools.Uploader
 
         private static async Task<JsonValue> GetCategories(bool useCached)
         {
-            if(useCached)
+            if (useCached)
             {
                 if (AssetStoreCache.GetCachedCategories(out JsonValue cachedCategoryJson))
                     return cachedCategoryJson;
@@ -411,7 +414,7 @@ namespace AssetStoreTools.Uploader
             {
                 ASDebug.Log("Upload task starting");
                 EditorApplication.LockReloadAssemblies();
-                
+
                 if (!IsUploading) // Only subscribe before the first upload
                     EditorApplication.playModeStateChanged += EditorPlayModeStateChangeHandler;
 
@@ -427,13 +430,15 @@ namespace AssetStoreTools.Uploader
             }
             catch (Exception e)
             {
+                ASDebug.LogError("Upload task failed with an exception: " + e);
+                ActiveUploads.TryRemove(versionId, out OngoingUpload _);
                 return PackageUploadResult.PackageUploadFail(ASError.GetGenericError(e));
             }
             finally
             {
                 if (!IsUploading) // Only unsubscribe after the last upload
                     EditorApplication.playModeStateChanged -= EditorPlayModeStateChangeHandler;
-                
+
                 EditorApplication.UnlockReloadAssemblies();
             }
         }
@@ -448,7 +453,7 @@ namespace AssetStoreTools.Uploader
             Dictionary<string, string> packageParams = new Dictionary<string, string>
             {
                 // Note: project_path is currently used to store UI selections
-                {"root_guid", localPackageGuid},             
+                {"root_guid", localPackageGuid},
                 {"root_path", localPackagePath},
                 {"project_path", localProjectPath}
             };
@@ -456,8 +461,6 @@ namespace AssetStoreTools.Uploader
             ASDebug.Log($"Creating upload request for {currentUpload.VersionId} {currentUpload.PackageName}");
 
             FileStream requestFileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read);
-            httpClient.DefaultRequestHeaders.Clear();
-            httpClient.DefaultRequestHeaders.Add("X-Unity-Session", SavedSessionId);
 
             bool responseTimedOut = false;
             long chunkSize = 32768;
@@ -480,14 +483,14 @@ namespace AssetStoreTools.Uploader
                     Thread.Sleep(updateIntervalMs);
 
                     // A timeout for rare cases, when package uploading reaches 100%, but PutAsync task IsComplete value remains 'False'
-                    if(requestFileStream.Position == requestFileStream.Length)
+                    if (requestFileStream.Position == requestFileStream.Length)
                     {
                         if (!allBytesSent)
                         {
                             allBytesSent = true;
                             timeOfCompletion = DateTime.UtcNow;
                         }
-                        else if(DateTime.UtcNow.Subtract(timeOfCompletion).TotalMilliseconds > UploadResponseTimeoutMs)
+                        else if (DateTime.UtcNow.Subtract(timeOfCompletion).TotalMilliseconds > UploadResponseTimeoutMs)
                         {
                             responseTimedOut = true;
                             currentUpload.Cancel();
@@ -501,7 +504,7 @@ namespace AssetStoreTools.Uploader
                 // For now we'll just check the token as well, but this needs to be investigated later on.
                 if (response.IsCanceled || currentUpload.CancellationToken.IsCancellationRequested)
                     currentUpload.CancellationToken.ThrowIfCancellationRequested();
-                
+
                 var responseString = response.Result.Content.ReadAsStringAsync().Result;
 
                 var success = JSONParser.AssetStoreResponseParse(responseString, out ASError error, out JsonValue json);
@@ -573,9 +576,6 @@ namespace AssetStoreTools.Uploader
         {
             SetupDownloadCancellation();
 
-            httpClient.DefaultRequestHeaders.Clear();
-            httpClient.DefaultRequestHeaders.Add("X-Unity-Session", SavedSessionId);
-
             var response = await httpClient.GetAsync(uri, s_downloadCancellationSource.Token)
                 .ContinueWith((x) => x.Result.Content.ReadAsStringAsync().Result, s_downloadCancellationSource.Token);
             s_downloadCancellationSource.Token.ThrowIfCancellationRequested();
@@ -628,7 +628,7 @@ namespace AssetStoreTools.Uploader
         {
             ASDebug.Log($"Main package data\n{mainPackageData}");
             var mainDataDict = mainPackageData["packages"].AsDict();
-            
+
             // Most likely both of them will be true at the same time, but better to be safe
             if (mainDataDict.Count == 0 || !extraPackageData.ContainsKey("packages"))
                 return new JsonValue();
@@ -688,7 +688,7 @@ namespace AssetStoreTools.Uploader
 
             return categories;
         }
-        
+
         /// <summary>
         /// Check if the account data is for a valid publisher account
         /// </summary>
@@ -699,7 +699,7 @@ namespace AssetStoreTools.Uploader
 
             if (!json.ContainsKey("publisher"))
                 return false;
-            
+
             // If publisher account is not created - let them know
             return !json["publisher"].IsNull();
         }
@@ -717,7 +717,7 @@ namespace AssetStoreTools.Uploader
         /// </summary>
         public static void AbortUploadTasks()
         {
-            foreach(var upload in ActiveUploads)
+            foreach (var upload in ActiveUploads)
             {
                 AbortPackageUpload(upload.Key);
             }
@@ -740,9 +740,9 @@ namespace AssetStoreTools.Uploader
 
         private static void EditorPlayModeStateChangeHandler(PlayModeStateChange state)
         {
-            if (state != PlayModeStateChange.ExitingEditMode) 
+            if (state != PlayModeStateChange.ExitingEditMode)
                 return;
-            
+
             EditorApplication.ExitPlaymode();
             EditorUtility.DisplayDialog("Notice", "Entering Play Mode is not allowed while there's a package upload in progress.\n\n" +
                                                   "Please wait until the upload is finished or cancel the upload from the Asset Store Uploader window", "OK");
@@ -753,12 +753,12 @@ namespace AssetStoreTools.Uploader
             var args = Environment.GetCommandLineArgs();
             for (var i = 0; i < args.Length; i++)
             {
-                if (!args[i].Equals("-assetStoreUrl")) 
+                if (!args[i].Equals("-assetStoreUrl"))
                     continue;
 
-                if (i + 1 >= args.Length) 
+                if (i + 1 >= args.Length)
                     return;
-                
+
                 ASDebug.Log($"Overriding A$ URL to: {args[i + 1]}");
                 AssetStoreProdUrl = args[i + 1];
                 return;

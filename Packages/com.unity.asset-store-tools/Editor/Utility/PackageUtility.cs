@@ -1,4 +1,4 @@
-﻿#if UNITY_2019_4 || UNITY_2020_3
+﻿#if UNITY_2019 || UNITY_2020
 using System;
 using System.Reflection;
 #endif
@@ -28,7 +28,7 @@ namespace AssetStoreTools.Utility
 
         public static PackageInfo[] GetAllPackages()
         {
-#if UNITY_2019_4 || UNITY_2020_3
+#if UNITY_2019 || UNITY_2020
             var method = typeof(PackageInfo).GetMethod("GetAll", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static, null, new Type[0], null);
             var packages = method?.Invoke(null, null) as PackageInfo[];
 #else

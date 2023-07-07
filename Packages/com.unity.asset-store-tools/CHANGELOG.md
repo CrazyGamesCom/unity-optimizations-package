@@ -1,6 +1,29 @@
 # Changelog
 All notable changes to this package will be documented in this file.
 
+## [11.2.2] - 2023-02-23
+
+### Validator Changes
+
+- Updated the 'LOD Setup' test to address some issues
+	- Added additional checks for LOD renderers (inactive renderer check, LOD Group reference check, relative hierarchy position to LOD Group check)
+	- LOD Group Component is no longer required to be on the root of the Prefab
+	- Updated the test result message interface when invalid Prefabs are found
+
+## [11.2.1] - 2023-01-17
+
+### Uploader Changes
+
+- Added a more informative error when exporting content with clashing guid meta files in hidden folders
+- Fixed a compilation issue for Unity 2020.1 and 2020.2
+- Fixed a rare error condition when queueing multiple package uploads in quick succession
+- Fixed Asset Store Uploader state not being properly reset if the uploading process fails
+
+### Validator Changes
+
+- Updated the Asset Store Validator description
+- Fixed a rare memory overflow issue when performing package validation
+
 ## [11.2.0] - 2022-11-03
 
 ### Uploader Changes

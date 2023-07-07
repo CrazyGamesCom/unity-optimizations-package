@@ -112,6 +112,7 @@ namespace AssetStoreTools.Uploader
                 outcomeList.Add(test.Result);
             }
 
+            EditorUtility.UnloadUnusedAssetsImmediate();
             EditorUtility.ClearProgressBar();
 
             EnableInfoBox(true, outcomeList);
