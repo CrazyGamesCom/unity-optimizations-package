@@ -168,7 +168,7 @@ namespace CrazyGames.WindowComponents.TextureOptimizations
                     var textureImporter = (TextureImporter) AssetImporter.GetAtPath(texturePath);
                     treeElements.Add(new TextureTreeItem("Texture2D", 0, idIncrement, texturePath, textureImporter));
                 }
-                catch (Exception e)
+                catch (Exception)
                 {
                     Debug.LogWarning("Failed to analyze texture at path: " + texturePath);
                 }
