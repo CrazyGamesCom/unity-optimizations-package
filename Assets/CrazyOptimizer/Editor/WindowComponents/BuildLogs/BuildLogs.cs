@@ -53,7 +53,8 @@ namespace CrazyOptimizer.Editor.WindowComponents.BuildLogs
             GUILayout.FlexibleSpace();
             if (GUILayout.Button("Open Editor.log", GUILayout.Width(200)))
             {
-                Process.Start("notepad.exe", GetEditorLogPath());
+                var processName = Application.platform == RuntimePlatform.OSXEditor ? "open" : "notepad.exe";
+                Process.Start(processName, GetEditorLogPath());
             }
 
             EditorGUILayout.EndHorizontal();
@@ -79,8 +80,17 @@ namespace CrazyOptimizer.Editor.WindowComponents.BuildLogs
 
         private static string GetEditorLogPath()
         {
-            var localAppDataPath = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-            var path = $@"{localAppDataPath}\Unity\Editor\Editor.log";
+            string path;
+            if (Application.platform == RuntimePlatform.OSXEditor)
+            {
+                var personalPath = Environment.GetFolderPath(Environment.SpecialFolder.Personal);
+                path = $"{personalPath}/Library/Logs/Unity/Editor.log";
+            }
+            else
+            {
+                var localAppDataPath = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+                path = $@"{localAppDataPath}\Unity\Editor\Editor.log";
+            }
             return path;
         }
 
