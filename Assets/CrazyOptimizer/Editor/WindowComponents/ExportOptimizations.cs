@@ -63,7 +63,7 @@ namespace CrazyGames.WindowComponents
             GUILayout.FlexibleSpace();
             if (GUILayout.Button("Read more tips on our developer documentation"))
             {
-                Application.OpenURL("https://developer.crazygames.com/unity-export-tips");
+                Application.OpenURL("https://docs.crazygames.com/sdk/unity/resources/export-tips/");
             }
 
             GUILayout.FlexibleSpace();
