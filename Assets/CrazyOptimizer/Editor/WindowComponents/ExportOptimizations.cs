@@ -41,11 +41,14 @@ namespace CrazyGames.WindowComponents
             }
 
 
+#if UNITY_2019 || UNITY_2020 || UNITY_2021 || UNITY_2022
             if (UnityEngine.Rendering.GraphicsSettings.renderPipelineAsset != null)
             {
                 RenderInfoItem(
-                    "If you are using URP but don't use post-processing we recommend disabling them. This will reduce approximately 1mb from your final build size. Check our tips on the link below for more info.");
+                    "If you are using URP but don't use post-processing we recommend disabling them. This will reduce approximately 1mb from your final build size. Check our tips on the link below for more info."
+                );
             }
+#endif
 
 #if UNITY_2021 || UNITY_2022
             // Unity is currently missing an API for accessing the GraphicsSettings preloaded shaders, so these need to be read from a serialized object
