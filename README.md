@@ -1,3 +1,5 @@
+⚠️ This project is no longer maintained. We are moving towards a custom Unity build script that will automatically apply the best settings that were suggested by the optimizer, in addition to the other export tips from our [documentation](https://docs.crazygames.com/resources/export-tips/).
+
 # Unity WebGL Optimizer
 
 The purpose of this package is to help you optimize your game by reducing the build size and increasing the performance. At the moment, it is targeted at WebGL games.
@@ -45,7 +47,6 @@ The model optimizations tool works very similar to the texture optimizations too
 The audio clip optimizations tool works very similar to the texture optimizations tool, but instead of textures it finds audio clips in your project and provides various tips about optimizing them.
 
 ![Audio optimizations](Docs/audio.png?raw=true "Audio optimizations")
-
 
 ## Build logs analyzer
 
