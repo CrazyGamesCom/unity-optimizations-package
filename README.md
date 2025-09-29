@@ -1,4 +1,4 @@
-⚠️ This project is no longer maintained. We are moving towards a custom Unity build script that will automatically apply the best settings that were suggested by the optimizer, in addition to the other export tips from our [documentation](https://docs.crazygames.com/resources/export-tips/).
+⚠️ This project is no longer maintained. We are moving towards a [custom Unity build script](https://docs.crazygames.com/resources/unity-custom-build/) that will automatically apply the best settings that were suggested by the optimizer, in addition to the other export tips from our [documentation](https://docs.crazygames.com/resources/optimization-tips/). The custom build tool also includes a better assets analyzer, offering more tips and one-click quick fix buttons.
 
 # Unity WebGL Optimizer
 
